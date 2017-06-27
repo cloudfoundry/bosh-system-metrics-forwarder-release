@@ -1,0 +1,7 @@
+set -ex
+
+export GOROOT=$(readlink -nf /var/vcap/packages/golang1.8.3)
+export PATH=$GOROOT/bin:$PATH
+export GOPATH=$PWD/bosh-system-metrics-forwarder-release
+
+go build -o ${BOSH_INSTALL_TARGET}/bosh-system-metrics-forwarder bosh-system-metrics-forwarder

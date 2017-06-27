@@ -1,0 +1,5 @@
+check process bosh-system-metrics-forwarder
+  with pidfile /var/vcap/sys/run/bosh-system-metrics-forwarder/bosh-system-metrics-forwarder.pid
+  start program "/var/vcap/jobs/bosh-system-metrics-forwarder/bin/ctl start"
+  stop program "/var/vcap/jobs/bosh-system-metrics-forwarder/bin/ctl stop"
+  group vcap

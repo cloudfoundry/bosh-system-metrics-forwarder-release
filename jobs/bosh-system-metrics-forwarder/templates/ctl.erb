@@ -1,0 +1,38 @@
+#!/bin/bash
+
+RUN_DIR=/var/vcap/sys/run/bosh-system-metrics-forwarder
+LOG_DIR=/var/vcap/sys/log/bosh-system-metrics-forwarder
+PIDFILE=${RUN_DIR}/bosh-system-metrics-forwarder.pid
+JOB_DIR=/var/vcap/jobs/bosh-system-metrics-forwarder
+
+PACKAGE_DIR=/var/vcap/packages/bosh-system-metrics-forwarder
+
+case $1 in
+
+start)
+mkdir -p $RUN_DIR $LOG_DIR
+chown -R vcap:vcap $RUN_DIR $LOG_DIR
+
+cd $PACKAGE_DIR
+
+ulimit -n 8192
+
+
+echo $$ > $PIDFILE
+exec chpst -u vcap:vcap ./bosh-system-metrics-forwarder \
+  &>> ${LOG_DIR}/bosh-system-metrics-forwarder.log
+
+;;
+
+stop)
+
+kill `cat $PIDFILE`
+
+rm -f $PIDFILE
+
+;;
+
+*)
+echo "Usage: ctl {start|stop}" ;;
+
+esac
