@@ -1,0 +1,45 @@
+- type: replace
+  path: /releases/-
+  value:
+    name: bosh-system-metrics-forwarder
+    version: latest
+
+- type: replace
+  path: /instance_groups/-
+  value:
+    name: bosh-system-metrics-forwarder
+    azs:
+    - z1
+    instances: 1
+    persistent_disk_type: default
+    vm_type: default
+    stemcell: default
+    networks:
+    - name: default
+    jobs:
+    - name: consul_agent
+      release: consul
+      consumes:
+        consul: nil
+        consul_common: {from: consul_common_link}
+        consul_server: nil
+        consul_client: {from: consul_client_link}
+    - name: metron_agent
+      release: loggregator
+      properties:
+        doppler:
+          addr: doppler.service.cf.internal
+        metron_agent:
+          disable_udp: false
+          deployment: loggregator
+        loggregator:
+          tls:
+            ca_cert: "((loggregator_metron.ca))"
+            metron:
+              cert: "((loggregator_metron.certificate))"
+              key: "((loggregator_metron.private_key))"
+    - name: forwarder
+      release: bosh-system-metrics-forwarder
+    update:
+      serial: true
+      max_in_flight: 1
