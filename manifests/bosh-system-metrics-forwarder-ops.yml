@@ -38,7 +38,7 @@
             metron:
               cert: "((loggregator_metron.certificate))"
               key: "((loggregator_metron.private_key))"
-    - name: forwarder
+    - name: bosh-system-metrics-forwarder
       release: bosh-system-metrics-forwarder
     update:
       serial: true
