@@ -30,7 +30,7 @@ func main() {
 		select {
 		case msg := <-msgs:
 			fmt.Printf("%v \n", msg)
-			if msg.GetValueMetric().GetName() == "bosh.healthmonitor.system.cpu.user" {
+			if msg.GetValueMetric().GetName() == "system.cpu.user" {
 				os.Exit(0)
 			}
 		case <-t.C:
