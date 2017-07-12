@@ -7,4 +7,18 @@ templates:
 packages:
   - bosh-system-metrics-forwarder
 
-properties: {}
+properties:
+  bosh_director.addr:
+    description: "The address and port of the director"
+
+  metrics_server.addr:
+    description: "The address and port of the bosh system metrics server"
+
+  tls.ca_cert:
+    description: "The CA certificate used to sign the server's tls certificate"
+
+  uaa_client.identity:
+    description: "The UAA client identity which has access to bosh system metrics"
+
+  uaa_client.password:
+    description: "The UAA client password which has access to bosh system metrics"
