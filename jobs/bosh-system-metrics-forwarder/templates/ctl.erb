@@ -20,6 +20,7 @@ ulimit -n 8192
 
 echo $$ > $PIDFILE
 exec chpst -u vcap:vcap ./bosh-system-metrics-forwarder \
+  --metrics-server-addr="<%= p('metrics_server.addr') %>" \
   &>> ${LOG_DIR}/bosh-system-metrics-forwarder.log
 
 ;;

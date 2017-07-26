@@ -9,10 +9,10 @@ packages:
 
 properties:
   bosh_director.addr:
-    description: "The address and port of the director"
+    description: "The host and port of the director"
 
   metrics_server.addr:
-    description: "The address and port of the bosh system metrics server"
+    description: "The host and port of the bosh system metrics server"
 
   tls.ca_cert:
     description: "The CA certificate used to sign the server's tls certificate"
