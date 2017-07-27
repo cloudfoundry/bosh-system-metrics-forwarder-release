@@ -3,6 +3,9 @@ name: bosh-system-metrics-forwarder
 
 templates:
   ctl.erb: bin/ctl
+  loggregator_ca.crt.erb: config/certs/loggregator/ca.crt
+  loggregator_client.crt.erb: config/certs/loggregator/client.crt
+  loggregator_client.key.erb: config/certs/loggregator/client.key
 
 packages:
   - bosh-system-metrics-forwarder
@@ -22,3 +25,13 @@ properties:
 
   uaa_client.password:
     description: "The UAA client password which has access to bosh system metrics"
+
+  loggregator.v2_api_port:
+    description: "Local metron agent gRPC port"
+    default: 3458
+  loggregator.ca_cert:
+    description: "CA Cert used to communicate with local metron agent over gRPC"
+  loggregator.cert:
+    description: "Cert used to communicate with local metron agent over gRPC"
+  loggregator.key:
+    description: "Key used to communicate with local metron agent over gRPC"

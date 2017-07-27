@@ -50,6 +50,10 @@
         uaa_client:
           identity: "system_metrics_client"
           password: "((system_metrics_uaa_client_secret))"
+        loggregator:
+          ca_cert: "((loggregator_metron.ca))"
+          cert: "((loggregator_metron.certificate))"
+          key: "((loggregator_metron.private_key))"
     update:
       serial: true
       max_in_flight: 1
