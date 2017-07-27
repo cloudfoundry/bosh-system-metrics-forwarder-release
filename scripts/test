@@ -1,5 +1,5 @@
 #!/bin/bash
 
-pushd src/bosh-system-metrics-forwarder
+pushd src/github.com/pivotal-cf/bosh-system-metrics-forwarder
 go test ./... -race
 popd
