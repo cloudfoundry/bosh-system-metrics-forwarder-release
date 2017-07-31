@@ -34,8 +34,8 @@ func mapHeartbeat(event *definitions.Event) *loggregator_v2.Envelope {
 			"job": {Data: &loggregator_v2.Value_Text{
 				Text: event.GetHeartbeat().GetJob(),
 			}},
-			"index": {Data: &loggregator_v2.Value_Integer{
-				Integer: int64(event.GetHeartbeat().GetIndex()),
+			"index": {Data: &loggregator_v2.Value_Text{
+				Text: event.GetHeartbeat().GetInstanceId(),
 			}},
 			"id": {Data: &loggregator_v2.Value_Text{
 				Text: event.GetHeartbeat().GetInstanceId(),

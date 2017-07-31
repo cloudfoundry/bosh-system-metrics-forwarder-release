@@ -21,8 +21,8 @@ func TestMapHeartbeat(t *testing.T) {
 			"job": {Data: &loggregator_v2.Value_Text{
 				Text: "consul",
 			}},
-			"index": {Data: &loggregator_v2.Value_Integer{
-				Integer: 4,
+			"index": {Data: &loggregator_v2.Value_Text{
+				Text: "6f60a3ce-9e4d-477f-ba45-7d29bcfab5b9",
 			}},
 			"id": {Data: &loggregator_v2.Value_Text{
 				Text: "6f60a3ce-9e4d-477f-ba45-7d29bcfab5b9",
