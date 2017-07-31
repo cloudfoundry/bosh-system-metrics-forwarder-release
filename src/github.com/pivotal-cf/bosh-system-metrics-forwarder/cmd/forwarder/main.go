@@ -31,22 +31,11 @@ func main() {
 	metronKey := flag.String("metron-key", "", "The key path for metron")
 	flag.Parse()
 
-	metricsConn, err := grpc.Dial(*metricsServerAddr, grpc.WithInsecure())
+	serverConn, err := grpc.Dial(*metricsServerAddr, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
-	directorClient := definitions.NewEgressClient(metricsConn)
-
-	metricsServerCtx, metricsServerCancel := context.WithCancel(context.Background())
-	metricsStreamClient, err := directorClient.BoshMetrics(
-		metricsServerCtx,
-		&definitions.EgressRequest{
-			SubscriptionId: "bosh-system-metrics-forwarder",
-		},
-	)
-	if err != nil {
-		log.Fatalf("error creating stream connection to metrics server: %s", err)
-	}
+	serverClient := definitions.NewEgressClient(serverConn)
 
 	c, err := newTLSConfig(*metronCA, *metronCert, *metronKey, "metron")
 	if err != nil {
@@ -65,15 +54,14 @@ func main() {
 	}
 
 	messages := make(chan *loggregator_v2.Envelope, 100)
-	i := ingress.New(metricsStreamClient, mapper.Map, messages)
+	i := ingress.New(serverClient, mapper.Map, messages)
 	e := egress.New(metronStreamClient, messages)
 
 	ingressStop := i.Start()
 	egressStop := e.Start()
 
 	defer func() {
-		metricsConn.Close()
-		metricsServerCancel()
+		serverConn.Close()
 		ingressStop()
 
 		close(messages)

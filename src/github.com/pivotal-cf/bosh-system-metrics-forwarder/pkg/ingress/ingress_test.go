@@ -1,27 +1,31 @@
 package ingress_test
 
 import (
+	"sync/atomic"
+	"testing"
+
 	"errors"
 	"io/ioutil"
 	"log"
-	"sync/atomic"
-	"testing"
+	"sync"
 
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/definitions"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/ingress"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
-	"sync"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 func TestStartProcessesEvents(t *testing.T) {
 	RegisterTestingT(t)
 
 	receiver := newSpyReceiver()
+	client := newSpyEgressClient(receiver)
 	mapper := newSpyMapper(envelope, nil)
 	messages := make(chan *loggregator_v2.Envelope, 1)
 
-	i := ingress.New(receiver, mapper.F, messages)
+	i := ingress.New(client, mapper.F, messages)
 	defer i.Start()()
 
 	Eventually(messages).Should(Receive(Equal(envelope)))
@@ -33,13 +37,14 @@ func TestStartRetriesUponReceiveError(t *testing.T) {
 
 	receiver := newSpyReceiver()
 	receiver.RecvError(errors.New("some error"))
+	client := newSpyEgressClient(receiver)
 	mapper := newSpyMapper(envelope, nil)
 	messages := make(chan *loggregator_v2.Envelope, 1)
 
-	i := ingress.New(receiver, mapper.F, messages)
+	i := ingress.New(client, mapper.F, messages)
 	defer i.Start()()
 
-	Consistently(messages).ShouldNot(Receive())
+	Eventually(client.BoshMetricsCallCount).Should(BeNumerically(">", 1))
 
 	receiver.RecvError(nil)
 
@@ -51,10 +56,11 @@ func TestStartContinuesUponConversionError(t *testing.T) {
 	log.SetOutput(ioutil.Discard)
 
 	receiver := newSpyReceiver()
+	client := newSpyEgressClient(receiver)
 	mapper := newSpyMapper(envelope, errors.New("conversion error"))
 	messages := make(chan *loggregator_v2.Envelope, 1)
 
-	i := ingress.New(receiver, mapper.F, messages)
+	i := ingress.New(client, mapper.F, messages)
 	defer i.Start()()
 
 	Consistently(messages).ShouldNot(Receive())
@@ -68,20 +74,42 @@ func TestStartDoesNotBlockSendingEnvelopes(t *testing.T) {
 	RegisterTestingT(t)
 
 	receiver := newSpyReceiver()
+	client := newSpyEgressClient(receiver)
 	mapper := newSpyMapper(envelope, nil)
 	messages := make(chan *loggregator_v2.Envelope, 2)
 
-	i := ingress.New(receiver, mapper.F, messages)
+	i := ingress.New(client, mapper.F, messages)
 	defer i.Start()()
 
 	Eventually(receiver.RecvCallCount).Should(BeNumerically(">", 3))
 
 }
 
+type spyEgressClient struct {
+	boshMetricsCallCount int64
+	receiver             definitions.Egress_BoshMetricsClient
+}
+
+func newSpyEgressClient(recv definitions.Egress_BoshMetricsClient) *spyEgressClient {
+	return &spyEgressClient{
+		receiver: recv,
+	}
+}
+
+func (c *spyEgressClient) BoshMetrics(ctx context.Context, r *definitions.EgressRequest, opts ...grpc.CallOption) (definitions.Egress_BoshMetricsClient, error) {
+	atomic.AddInt64(&c.boshMetricsCallCount, 1)
+	return c.receiver, nil
+}
+
+func (c *spyEgressClient) BoshMetricsCallCount() int64 {
+	return atomic.LoadInt64(&c.boshMetricsCallCount)
+}
+
 type spyReceiver struct {
-	mu sync.Mutex
+	mu            sync.Mutex
 	recvError     error
 	recvCallCount int64
+	grpc.ClientStream
 }
 
 func newSpyReceiver() *spyReceiver {
@@ -110,7 +138,7 @@ func (r *spyReceiver) RecvCallCount() int64 {
 }
 
 type spyMapper struct {
-	mu sync.Mutex
+	mu           sync.Mutex
 	convertError error
 	Envelope     *loggregator_v2.Envelope
 }
