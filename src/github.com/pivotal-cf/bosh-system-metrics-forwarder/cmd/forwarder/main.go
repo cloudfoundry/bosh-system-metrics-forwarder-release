@@ -29,14 +29,27 @@ func main() {
 	metronCA := flag.String("metron-ca", "", "The CA cert path for metron")
 	metronCert := flag.String("metron-cert", "", "The cert path for metron")
 	metronKey := flag.String("metron-key", "", "The key path for metron")
+
+	metricsCA := flag.String("metrics-ca", "", "The CA cert path for the metrics server")
+	metricsCN := flag.String("metrics-cn", "", "The common name for the metrics server")
+
 	flag.Parse()
 
-	serverConn, err := grpc.Dial(*metricsServerAddr, grpc.WithInsecure())
+	// server setup
+	serverTLSConf := &tls.Config{
+		ServerName: *metricsCN,
+	}
+	err := setCACert(serverTLSConf, *metricsCA)
+	if err != nil {
+		log.Fatal(err)
+	}
+	serverConn, err := grpc.Dial(*metricsServerAddr, grpc.WithTransportCredentials(credentials.NewTLS(serverTLSConf)))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
 	serverClient := definitions.NewEgressClient(serverConn)
 
+	// metron setup
 	c, err := newTLSConfig(*metronCA, *metronCert, *metronKey, "metron")
 	if err != nil {
 		log.Fatalf("unable to read tls certs: %s", err)
