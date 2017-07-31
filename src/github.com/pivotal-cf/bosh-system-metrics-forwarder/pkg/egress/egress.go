@@ -29,7 +29,6 @@ func (e *Egress) Start() func() {
 		log.Println("Starting forwarder...")
 		for envelope := range e.messages {
 			err := e.sendWithRetry(envelope)
-			log.Printf("Forwarding envelope: %v\n", envelope)
 			if err != nil {
 				log.Printf("Error sending to log agent: %s", err)
 				// TODO: counter metric
