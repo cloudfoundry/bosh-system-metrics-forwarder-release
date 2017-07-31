@@ -4,10 +4,11 @@ import (
 	"log"
 	"time"
 
-	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/definitions"
-	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
 	"context"
 	"sync"
+
+	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/definitions"
+	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
 )
 
 type receiver interface {

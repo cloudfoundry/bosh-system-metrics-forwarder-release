@@ -3,6 +3,7 @@ name: bosh-system-metrics-forwarder
 
 templates:
   ctl.erb: bin/ctl
+  metrics_ca.crt.erb: config/certs/metrics/ca.crt
   loggregator_ca.crt.erb: config/certs/loggregator/ca.crt
   loggregator_client.crt.erb: config/certs/loggregator/client.crt
   loggregator_client.key.erb: config/certs/loggregator/client.key
@@ -17,8 +18,11 @@ properties:
   metrics_server.addr:
     description: "The host and port of the bosh system metrics server"
 
-  tls.ca_cert:
+  metrics_forwarder.tls.ca_cert:
     description: "The CA certificate used to sign the server's tls certificate"
+
+  metrics_forwarder.tls.common_name:
+    description: "The common name used to sign the server's tls certificate"
 
   uaa_client.identity:
     description: "The UAA client identity which has access to bosh system metrics"

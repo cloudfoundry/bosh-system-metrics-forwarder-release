@@ -88,17 +88,26 @@ func newTLSConfig(caPath, certPath, keyPath, cn string) (*tls.Config, error) {
 		InsecureSkipVerify: false,
 	}
 
-	caCertBytes, err := ioutil.ReadFile(caPath)
+	err = setCACert(tlsConfig, caPath)
 	if err != nil {
 		return nil, err
 	}
 
+	return tlsConfig, nil
+}
+
+func setCACert(tlsConfig *tls.Config, caPath string) error {
+	caCertBytes, err := ioutil.ReadFile(caPath)
+	if err != nil {
+		return err
+	}
+
 	caCertPool := x509.NewCertPool()
 	if ok := caCertPool.AppendCertsFromPEM(caCertBytes); !ok {
-		return nil, errors.New("cannot parse ca cert")
+		return errors.New("cannot parse ca cert")
 	}
 
 	tlsConfig.RootCAs = caCertPool
 
-	return tlsConfig, nil
+	return nil
 }

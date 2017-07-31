@@ -22,6 +22,8 @@ ulimit -n 8192
 echo $$ > $PIDFILE
 exec chpst -u vcap:vcap ./bosh-system-metrics-forwarder \
   --metrics-server-addr="<%= p('metrics_server.addr') %>" \
+  --metrics-ca="$CERT_DIR/metrics/ca.crt" \
+  --metrics-cn="<%= p('metrics_forwarder.tls.common_name') %>" \
   --metron-port="<%= p('loggregator.v2_api_port') %>" \
   --metron-ca="$CERT_DIR/loggregator/ca.crt" \
   --metron-cert="$CERT_DIR/loggregator/client.crt" \

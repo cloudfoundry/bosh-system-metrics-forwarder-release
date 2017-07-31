@@ -45,8 +45,10 @@
           addr: "((internal_ip)):25555"
         metrics_server:
           addr: "((internal_ip)):25595"
-        tls:
-          ca_cert: "((system_metrics_server_ssl.ca))"
+        metrics_forwarder:
+          tls:
+            ca_cert: "((system_metrics_server_ssl.ca))"
+            common_name: "((internal_ip))"
         uaa_client:
           identity: "system_metrics_client"
           password: "((system_metrics_uaa_client_secret))"
