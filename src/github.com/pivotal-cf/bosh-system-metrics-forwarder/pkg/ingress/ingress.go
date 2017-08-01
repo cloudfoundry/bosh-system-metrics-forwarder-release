@@ -1,6 +1,7 @@
 package ingress
 
 import (
+	"expvar"
 	"log"
 	"time"
 
@@ -30,6 +31,22 @@ type Ingress struct {
 	metricsServerCancel context.CancelFunc
 }
 
+var (
+	connErrCounter    *expvar.Int
+	receiveErrCounter *expvar.Int
+	convertErrCounter *expvar.Int
+	receivedCounter   *expvar.Int
+	droppedCounter    *expvar.Int
+)
+
+func init() {
+	connErrCounter = expvar.NewInt("ingress.stream_conn_err")
+	receiveErrCounter = expvar.NewInt("ingress.stream_receive_err")
+	convertErrCounter = expvar.NewInt("ingress.stream_convert_err")
+	receivedCounter = expvar.NewInt("ingress.received")
+	droppedCounter = expvar.NewInt("ingress.dropped")
+}
+
 func New(s definitions.EgressClient, m mapper, messages chan *loggregator_v2.Envelope) *Ingress {
 	return &Ingress{
 		client:   s,
@@ -39,14 +56,12 @@ func New(s definitions.EgressClient, m mapper, messages chan *loggregator_v2.Env
 }
 
 func (i *Ingress) Start() func() {
-
 	log.Println("Starting ingestor...")
-
 	go func() {
 		for {
 			metricsStreamClient, err := i.establishStream()
 			if err != nil {
-				// TODO: counter metric
+				connErrCounter.Add(1)
 				log.Printf("error creating stream connection to metrics server: %s", err)
 				time.Sleep(250 * time.Millisecond)
 				continue
@@ -54,7 +69,7 @@ func (i *Ingress) Start() func() {
 
 			err = i.processMessages(metricsStreamClient)
 			if err != nil {
-				// TODO: counter metric
+				receiveErrCounter.Add(1)
 				log.Printf("Error receiving from metrics server: %s", err)
 				time.Sleep(250 * time.Millisecond)
 				continue
@@ -79,14 +94,15 @@ func (i *Ingress) processMessages(client definitions.Egress_BoshMetricsClient) e
 
 		envelope, err := i.convert(event)
 		if err != nil {
-			// TODO: counter metric
+			convertErrCounter.Add(1)
 			continue
 		}
 
 		select {
 		case i.messages <- envelope:
+			receivedCounter.Add(1)
 		default:
-			// TODO: counter metric
+			droppedCounter.Add(1)
 		}
 	}
 }

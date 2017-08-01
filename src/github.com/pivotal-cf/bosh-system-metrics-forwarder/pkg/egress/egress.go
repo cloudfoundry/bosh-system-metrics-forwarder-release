@@ -1,6 +1,7 @@
 package egress
 
 import (
+	"expvar"
 	"log"
 	"time"
 
@@ -14,6 +15,16 @@ type sender interface {
 type Egress struct {
 	messages chan *loggregator_v2.Envelope
 	snd      sender
+}
+
+var (
+	sendErrCounter *expvar.Int
+	sentCounter    *expvar.Int
+)
+
+func init() {
+	sendErrCounter = expvar.NewInt("egress.send_err")
+	sentCounter = expvar.NewInt("egress.sent")
 }
 
 func New(s sender, m chan *loggregator_v2.Envelope) *Egress {
@@ -31,11 +42,10 @@ func (e *Egress) Start() func() {
 			err := e.sendWithRetry(envelope)
 			if err != nil {
 				log.Printf("Error sending to log agent: %s", err)
-				// TODO: counter metric
+				sendErrCounter.Add(1)
 				continue
 			}
-
-			// TODO: counter metric
+			sentCounter.Add(1)
 		}
 	}()
 

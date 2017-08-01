@@ -24,6 +24,10 @@ properties:
   metrics_forwarder.tls.common_name:
     description: "The common name used to sign the server's tls certificate"
 
+  metrics_forwarder.health_port:
+    description: "The port used to obtain health metrics on localhost"
+    default: 19111
+
   uaa_client.identity:
     description: "The UAA client identity which has access to bosh system metrics"
 

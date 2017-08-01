@@ -5,10 +5,13 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
+	"expvar"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -33,6 +36,7 @@ func main() {
 	metricsCA := flag.String("metrics-ca", "", "The CA cert path for the metrics server")
 	metricsCN := flag.String("metrics-cn", "", "The common name for the metrics server")
 
+	healthPort := flag.Int("health-port", 19111, "The port for the localhost health endpoint")
 	flag.Parse()
 
 	// server setup
@@ -65,6 +69,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("error creating stream connection to metron: %s", err)
 	}
+
+	go func() {
+		mux := http.NewServeMux()
+		mux.Handle("/health", expvar.Handler())
+		http.ListenAndServe(fmt.Sprintf("localhost:%d", *healthPort), mux)
+	}()
 
 	messages := make(chan *loggregator_v2.Envelope, 100)
 	i := ingress.New(serverClient, mapper.Map, messages)
