@@ -16,6 +16,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/auth"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/definitions"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/egress"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/ingress"
@@ -26,6 +27,9 @@ import (
 )
 
 func main() {
+	directorAddr := flag.String("director-addr", "", "The host and port of the bosh director")
+	clientIdentity := flag.String("auth-client-identity", "", "The UAA client identity which has access to bosh system metrics")
+	clientSecret := flag.String("auth-client-secret", "", "The UAA client password")
 
 	metricsServerAddr := flag.String("metrics-server-addr", "", "The host and port of the metrics server")
 	metronPort := flag.String("metron-port", "3458", "The GRPC port to inject metrics to")
@@ -39,26 +43,39 @@ func main() {
 	healthPort := flag.Int("health-port", 19111, "The port for the localhost health endpoint")
 	flag.Parse()
 
-	// server setup
+	authClient := auth.New(*directorAddr)
+	authToken, err := authClient.GetToken(*clientIdentity, *clientSecret)
+	if err != nil {
+		log.Fatalf("could not get token from AuthServer: %v", err)
+	}
+
+	// server setup (ingress)
 	serverTLSConf := &tls.Config{
 		ServerName: *metricsCN,
 	}
-	err := setCACert(serverTLSConf, *metricsCA)
+	err = setCACert(serverTLSConf, *metricsCA)
 	if err != nil {
 		log.Fatal(err)
 	}
-	serverConn, err := grpc.Dial(*metricsServerAddr, grpc.WithTransportCredentials(credentials.NewTLS(serverTLSConf)))
+	serverConn, err := grpc.Dial(
+		*metricsServerAddr,
+		grpc.WithTransportCredentials(credentials.NewTLS(serverTLSConf)),
+		grpc.WithPerRPCCredentials(auth.MapGRPCCreds(authToken)),
+	)
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
 	serverClient := definitions.NewEgressClient(serverConn)
 
-	// metron setup
+	// metron setup (egress)
 	c, err := newTLSConfig(*metronCA, *metronCert, *metronKey, "metron")
 	if err != nil {
 		log.Fatalf("unable to read tls certs: %s", err)
 	}
-	metronConn, err := grpc.Dial(net.JoinHostPort("localhost", *metronPort), grpc.WithTransportCredentials(credentials.NewTLS(c)))
+	metronConn, err := grpc.Dial(
+		net.JoinHostPort("localhost", *metronPort),
+		grpc.WithTransportCredentials(credentials.NewTLS(c)),
+	)
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}

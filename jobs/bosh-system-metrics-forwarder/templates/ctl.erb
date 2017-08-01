@@ -18,9 +18,11 @@ cd $PACKAGE_DIR
 
 ulimit -n 8192
 
-
 echo $$ > $PIDFILE
 exec chpst -u vcap:vcap ./bosh-system-metrics-forwarder \
+  --director-addr="<%= p('bosh_director.addr') %>" \
+  --auth-client-identity="<%= p('uaa_client.identity') %>" \
+  --auth-client-secret="<%= p('uaa_client.password') %>" \
   --metrics-server-addr="<%= p('metrics_server.addr') %>" \
   --metrics-ca="$CERT_DIR/metrics/ca.crt" \
   --metrics-cn="<%= p('metrics_forwarder.tls.common_name') %>" \
