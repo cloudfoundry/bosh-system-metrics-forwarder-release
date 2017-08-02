@@ -3,7 +3,6 @@ package auth
 import (
 	"encoding/json"
 	"fmt"
-	"errors"
 	"net/http"
 	"net/url"
 	"strings"
@@ -27,7 +26,7 @@ func New(infoAddr string) *Auth {
 type infoResponse struct {
 	UserAuthentication struct {
 		AuthType string `json:"type"`
-		Options struct {
+		Options  struct {
 			Url string `json:"url"`
 		} `json:"options"`
 	} `json:"user_authentication"`
@@ -44,9 +43,8 @@ func (a *Auth) getServerAddr() (string, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return "", errors.New(fmt.Sprintf("info endpoint returned bad status code: %d", resp.StatusCode))
+		return "", fmt.Errorf("info endpoint returned bad status code: %d", resp.StatusCode)
 	}
-
 	defer resp.Body.Close()
 
 	var info infoResponse
@@ -81,9 +79,8 @@ func (a *Auth) GetToken(clientId, clientSecret string) (string, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return "", errors.New(fmt.Sprintf("auth endpoint returned bad status code: %d", resp.StatusCode))
+		return "", fmt.Errorf("auth endpoint returned bad status code: %d", resp.StatusCode)
 	}
-
 	defer resp.Body.Close()
 
 	var auth authResponse
