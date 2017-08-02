@@ -17,7 +17,7 @@ type AuthTokenCreds struct {
 
 func (ts AuthTokenCreds) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
 	return map[string]string{
-		"authorization": "bearer " + ts.token,
+		"authorization": ts.token,
 	}, nil
 }
 
