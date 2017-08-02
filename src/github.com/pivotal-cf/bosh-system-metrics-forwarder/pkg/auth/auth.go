@@ -7,19 +7,23 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"crypto/tls"
 )
 
 type Auth struct {
 	httpClient *http.Client
-	infoAddr   string
+	infoURL    string
 }
 
-func New(infoAddr string) *Auth {
+func New(infoAddr string, tlsConfig *tls.Config) *Auth {
 	return &Auth{
 		httpClient: &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: tlsConfig,
+			},
 			Timeout: 30 * time.Second,
 		},
-		infoAddr: infoAddr,
+		infoURL: infoAddr,
 	}
 }
 
@@ -37,7 +41,7 @@ type authResponse struct {
 }
 
 func (a *Auth) getServerAddr() (string, error) {
-	resp, err := a.httpClient.Get(fmt.Sprintf("%s/info", a.infoAddr))
+	resp, err := a.httpClient.Get(fmt.Sprintf("%s/info", a.infoURL))
 	if err != nil {
 		return "", err
 	}

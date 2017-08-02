@@ -3,6 +3,7 @@ name: bosh-system-metrics-forwarder
 
 templates:
   ctl.erb: bin/ctl
+  bosh_ca.crt.erb: config/certs/bosh/ca.crt
   metrics_ca.crt.erb: config/certs/metrics/ca.crt
   loggregator_ca.crt.erb: config/certs/loggregator/ca.crt
   loggregator_client.crt.erb: config/certs/loggregator/client.crt
@@ -12,25 +13,24 @@ packages:
   - bosh-system-metrics-forwarder
 
 properties:
-  bosh_director.addr:
-    description: "The host and port of the director"
+  bosh.url:
+    description: "The url of the director"
+  bosh.root_ca_cert:
+    description: "The root ca of the director"
 
   metrics_server.addr:
     description: "The host and port of the bosh system metrics server"
 
   metrics_forwarder.tls.ca_cert:
     description: "The CA certificate used to sign the server's tls certificate"
-
   metrics_forwarder.tls.common_name:
     description: "The common name used to sign the server's tls certificate"
-
   metrics_forwarder.health_port:
     description: "The port used to obtain health metrics on localhost"
     default: 19111
 
   uaa_client.identity:
     description: "The UAA client identity which has access to bosh system metrics"
-
   uaa_client.password:
     description: "The UAA client password which has access to bosh system metrics"
 

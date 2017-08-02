@@ -20,7 +20,8 @@ ulimit -n 8192
 
 echo $$ > $PIDFILE
 exec chpst -u vcap:vcap ./bosh-system-metrics-forwarder \
-  --director-addr="<%= p('bosh_director.addr') %>" \
+  --director-url="<%= p('bosh.url') %>" \
+  --director-ca="$CERT_DIR/bosh/ca.crt" \
   --auth-client-identity="<%= p('uaa_client.identity') %>" \
   --auth-client-secret="<%= p('uaa_client.password') %>" \
   --metrics-server-addr="<%= p('metrics_server.addr') %>" \

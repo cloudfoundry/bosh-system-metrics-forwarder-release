@@ -11,7 +11,7 @@ import (
 	"sync"
 
 	. "github.com/onsi/gomega"
-	
+
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/auth"
 )
 
@@ -31,7 +31,7 @@ func TestGetToken(t *testing.T) {
 	clientId := "system-metrics-server"
 	clientSecret := "asddnbhkasdhasd123"
 
-	client := auth.New(directorAddr)
+	client := auth.New(directorAddr, nil)
 	token, err := client.GetToken(clientId, clientSecret)
 
 	Expect(err).ToNot(HaveOccurred())
@@ -56,7 +56,7 @@ func TestGetToken_withFailingInfoRequest(t *testing.T) {
 	defer testInfoServer.Close()
 	directorAddr := testInfoServer.URL
 
-	client := auth.New(directorAddr)
+	client := auth.New(directorAddr, nil)
 	_, err := client.GetToken("unused", "unused")
 
 	Expect(err).To(HaveOccurred())
@@ -70,7 +70,7 @@ func TestGetToken_withUnparseableInfoRequest(t *testing.T) {
 	defer testInfoServer.Close()
 	directorAddr := testInfoServer.URL
 
-	client := auth.New(directorAddr)
+	client := auth.New(directorAddr, nil)
 	_, err := client.GetToken("unused", "unused")
 
 	Expect(err).To(HaveOccurred())
@@ -88,7 +88,7 @@ func TestGetToken_withFailingAuthRequest(t *testing.T) {
 	defer testInfoServer.Close()
 	directorAddr := testInfoServer.URL
 
-	client := auth.New(directorAddr)
+	client := auth.New(directorAddr, nil)
 	_, err := client.GetToken("unused", "unused")
 
 	Expect(err).To(HaveOccurred())
@@ -106,7 +106,7 @@ func TestGetToken_withUnparseableAuthRequest(t *testing.T) {
 	defer testInfoServer.Close()
 	directorAddr := testInfoServer.URL
 
-	client := auth.New(directorAddr)
+	client := auth.New(directorAddr, nil)
 	_, err := client.GetToken("unused", "unused")
 
 	Expect(err).To(HaveOccurred())

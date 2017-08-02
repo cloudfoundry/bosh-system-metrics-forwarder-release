@@ -41,8 +41,9 @@
     - name: bosh-system-metrics-forwarder
       release: bosh-system-metrics-forwarder
       properties:
-        bosh_director:
-          addr: "((internal_ip)):25555"
+        bosh:
+          url: "https://((internal_ip)):25555"
+          root_ca_cert: "((director_ssl.ca))"
         metrics_server:
           addr: "((internal_ip)):25595"
         metrics_forwarder:

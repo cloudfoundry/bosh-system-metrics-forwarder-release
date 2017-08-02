@@ -27,7 +27,8 @@ import (
 )
 
 func main() {
-	directorAddr := flag.String("director-addr", "", "The host and port of the bosh director")
+	directorURL := flag.String("director-url", "", "The url of the bosh director")
+	directorCA := flag.String("director-ca", "", "The CA cert path for the bosh director")
 	clientIdentity := flag.String("auth-client-identity", "", "The UAA client identity which has access to bosh system metrics")
 	clientSecret := flag.String("auth-client-secret", "", "The UAA client password")
 
@@ -43,7 +44,12 @@ func main() {
 	healthPort := flag.Int("health-port", 19111, "The port for the localhost health endpoint")
 	flag.Parse()
 
-	authClient := auth.New(*directorAddr)
+	directorTLSConf := &tls.Config{}
+	err := setCACert(directorTLSConf, *directorCA)
+	if err != nil {
+		log.Fatal(err)
+	}
+	authClient := auth.New(*directorURL, directorTLSConf)
 	authToken, err := authClient.GetToken(*clientIdentity, *clientSecret)
 	if err != nil {
 		log.Fatalf("could not get token from AuthServer: %v", err)
