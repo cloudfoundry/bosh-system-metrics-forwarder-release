@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"errors"
 	"expvar"
 	"flag"
 	"fmt"
@@ -150,7 +149,7 @@ func setCACert(tlsConfig *tls.Config, caPath string) error {
 
 	caCertPool := x509.NewCertPool()
 	if ok := caCertPool.AppendCertsFromPEM(caCertBytes); !ok {
-		return errors.New("cannot parse ca cert")
+		return fmt.Errorf("cannot parse ca cert from %s", caPath)
 	}
 
 	tlsConfig.RootCAs = caCertPool
