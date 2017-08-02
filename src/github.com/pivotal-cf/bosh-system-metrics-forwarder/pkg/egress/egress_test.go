@@ -4,11 +4,12 @@ import (
 	"errors"
 	"testing"
 
+	"sync"
+
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/definitions"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/egress"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
-	"sync"
 )
 
 func TestStartProcessesEvents(t *testing.T) {
@@ -44,10 +45,9 @@ func TestStartRetriesUponSendError(t *testing.T) {
 }
 
 type spySender struct {
-	mu sync.Mutex
+	mu            sync.Mutex
 	sendError     error
 	SentEnvelopes chan *loggregator_v2.Envelope
-
 }
 
 func newSpySender() *spySender {
@@ -112,7 +112,6 @@ var heartbeatEvent = &definitions.Event{
 			Index:      4,
 			InstanceId: "6f60a3ce-9e4d-477f-ba45-7d29bcfab5b9",
 			JobState:   "running",
-			Vitals:     &definitions.Heartbeat_Vitals{},
 			Metrics: []*definitions.Heartbeat_Metric{
 				{
 					Name:      "system.healthy",

@@ -76,7 +76,6 @@ var heartbeatEvent = &definitions.Event{
 			Index:      4,
 			InstanceId: "6f60a3ce-9e4d-477f-ba45-7d29bcfab5b9",
 			JobState:   "running",
-			Vitals:     &definitions.Heartbeat_Vitals{},
 			Metrics: []*definitions.Heartbeat_Metric{
 				{
 					Name:      "system.load.1m",
