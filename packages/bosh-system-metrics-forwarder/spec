@@ -8,6 +8,7 @@ files:
 - github.com/golang/protobuf/proto/*.go # gosub
 - github.com/golang/protobuf/ptypes/any/*.go # gosub
 - github.com/pivotal-cf/bosh-system-metrics-forwarder/cmd/forwarder/*.go # gosub
+- github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/auth/*.go # gosub
 - github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/definitions/*.go # gosub
 - github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/egress/*.go # gosub
 - github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/ingress/*.go # gosub
