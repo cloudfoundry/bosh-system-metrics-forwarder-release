@@ -21,7 +21,7 @@ func TestStartProcessesEvents(t *testing.T) {
 	RegisterTestingT(t)
 
 	receiver := newSpyReceiver()
-	client := newSpyEgressClient(receiver)
+	client := newSpyEgressClient(receiver, nil)
 	mapper := newSpyMapper(envelope, nil)
 	messages := make(chan *loggregator_v2.Envelope, 1)
 
@@ -37,7 +37,7 @@ func TestStartRetriesUponReceiveError(t *testing.T) {
 
 	receiver := newSpyReceiver()
 	receiver.RecvError(errors.New("some error"))
-	client := newSpyEgressClient(receiver)
+	client := newSpyEgressClient(receiver, nil)
 	mapper := newSpyMapper(envelope, nil)
 	messages := make(chan *loggregator_v2.Envelope, 1)
 
@@ -51,12 +51,33 @@ func TestStartRetriesUponReceiveError(t *testing.T) {
 	Eventually(messages).Should(Receive(Equal(envelope)))
 }
 
+//func TestStartPanicsUponPermissionDeniedError(t *testing.T) {
+//	RegisterTestingT(t)
+//	log.SetOutput(ioutil.Discard)
+//	//defer func() {
+//	//	if r := recover(); r == nil {
+//	//		t.Errorf("The code did not panic")
+//	//	}
+//	//}()
+//
+//	receiver := newSpyReceiver()
+//	receiver.RecvError(errors.New("some error"))
+//	client := newSpyEgressClient(receiver, status.Error(codes.PermissionDenied, "some error message"))
+//	mapper := newSpyMapper(envelope, nil)
+//	messages := make(chan *loggregator_v2.Envelope, 1)
+//
+//	i := ingress.New(client, mapper.F, messages)
+//	Expect(func() {
+//		i.Start()
+//	}).To(Panic())
+//}
+
 func TestStartContinuesUponConversionError(t *testing.T) {
 	RegisterTestingT(t)
 	log.SetOutput(ioutil.Discard)
 
 	receiver := newSpyReceiver()
-	client := newSpyEgressClient(receiver)
+	client := newSpyEgressClient(receiver, nil)
 	mapper := newSpyMapper(envelope, errors.New("conversion error"))
 	messages := make(chan *loggregator_v2.Envelope, 1)
 
@@ -74,7 +95,7 @@ func TestStartDoesNotBlockSendingEnvelopes(t *testing.T) {
 	RegisterTestingT(t)
 
 	receiver := newSpyReceiver()
-	client := newSpyEgressClient(receiver)
+	client := newSpyEgressClient(receiver, nil)
 	mapper := newSpyMapper(envelope, nil)
 	messages := make(chan *loggregator_v2.Envelope, 2)
 
@@ -88,17 +109,19 @@ func TestStartDoesNotBlockSendingEnvelopes(t *testing.T) {
 type spyEgressClient struct {
 	boshMetricsCallCount int64
 	receiver             definitions.Egress_BoshMetricsClient
+	err                  error
 }
 
-func newSpyEgressClient(recv definitions.Egress_BoshMetricsClient) *spyEgressClient {
+func newSpyEgressClient(recv definitions.Egress_BoshMetricsClient, err error) *spyEgressClient {
 	return &spyEgressClient{
 		receiver: recv,
+		err:      err,
 	}
 }
 
 func (c *spyEgressClient) BoshMetrics(ctx context.Context, r *definitions.EgressRequest, opts ...grpc.CallOption) (definitions.Egress_BoshMetricsClient, error) {
 	atomic.AddInt64(&c.boshMetricsCallCount, 1)
-	return c.receiver, nil
+	return c.receiver, c.err
 }
 
 func (c *spyEgressClient) BoshMetricsCallCount() int64 {

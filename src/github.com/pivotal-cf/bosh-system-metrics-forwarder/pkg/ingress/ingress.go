@@ -10,6 +10,8 @@ import (
 
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/definitions"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type receiver interface {
@@ -61,6 +63,12 @@ func (i *Ingress) Start() func() {
 		for {
 			metricsStreamClient, err := i.establishStream()
 			if err != nil {
+
+				s, ok := status.FromError(err)
+				if ok && s.Code() == codes.PermissionDenied {
+					log.Fatalf("Authorization failure: %s", err)
+				}
+
 				connErrCounter.Add(1)
 				log.Printf("error creating stream connection to metrics server: %s", err)
 				time.Sleep(250 * time.Millisecond)
