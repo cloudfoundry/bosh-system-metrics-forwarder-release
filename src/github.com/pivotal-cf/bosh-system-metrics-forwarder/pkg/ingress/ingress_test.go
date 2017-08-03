@@ -15,6 +15,8 @@ import (
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestStartProcessesEvents(t *testing.T) {
@@ -24,8 +26,9 @@ func TestStartProcessesEvents(t *testing.T) {
 	client := newSpyEgressClient(receiver, nil)
 	mapper := newSpyMapper(envelope, nil)
 	messages := make(chan *loggregator_v2.Envelope, 1)
+	tokener := newSpyTokener()
 
-	i := ingress.New(client, mapper.F, messages)
+	i := ingress.New(client, mapper.F, messages, tokener)
 	defer i.Start()()
 
 	Eventually(messages).Should(Receive(Equal(envelope)))
@@ -40,8 +43,9 @@ func TestStartRetriesUponReceiveError(t *testing.T) {
 	client := newSpyEgressClient(receiver, nil)
 	mapper := newSpyMapper(envelope, nil)
 	messages := make(chan *loggregator_v2.Envelope, 1)
+	tokener := newSpyTokener()
 
-	i := ingress.New(client, mapper.F, messages)
+	i := ingress.New(client, mapper.F, messages, tokener)
 	defer i.Start()()
 
 	Eventually(client.BoshMetricsCallCount).Should(BeNumerically(">", 1))
@@ -49,6 +53,24 @@ func TestStartRetriesUponReceiveError(t *testing.T) {
 	receiver.RecvError(nil)
 
 	Eventually(messages).Should(Receive(Equal(envelope)))
+}
+
+func TestStartRefreshesTokenUponPermissionDeniedError(t *testing.T) {
+	RegisterTestingT(t)
+
+	receiver := newSpyReceiver()
+	client := newSpyEgressClient(
+		receiver,
+		status.Error(codes.PermissionDenied, "some-error"),
+	)
+	mapper := newSpyMapper(envelope, nil)
+	messages := make(chan *loggregator_v2.Envelope, 1)
+	tokener := newSpyTokener()
+
+	i := ingress.New(client, mapper.F, messages, tokener)
+	defer i.Start()()
+
+	Eventually(tokener.RefreshTokenCallCount).Should(BeNumerically(">", 1))
 }
 
 //func TestStartPanicsUponPermissionDeniedError(t *testing.T) {
@@ -80,8 +102,9 @@ func TestStartContinuesUponConversionError(t *testing.T) {
 	client := newSpyEgressClient(receiver, nil)
 	mapper := newSpyMapper(envelope, errors.New("conversion error"))
 	messages := make(chan *loggregator_v2.Envelope, 1)
+	tokener := newSpyTokener()
 
-	i := ingress.New(client, mapper.F, messages)
+	i := ingress.New(client, mapper.F, messages, tokener)
 	defer i.Start()()
 
 	Consistently(messages).ShouldNot(Receive())
@@ -98,8 +121,9 @@ func TestStartDoesNotBlockSendingEnvelopes(t *testing.T) {
 	client := newSpyEgressClient(receiver, nil)
 	mapper := newSpyMapper(envelope, nil)
 	messages := make(chan *loggregator_v2.Envelope, 2)
+	tokener := newSpyTokener()
 
-	i := ingress.New(client, mapper.F, messages)
+	i := ingress.New(client, mapper.F, messages, tokener)
 	defer i.Start()()
 
 	Eventually(receiver.RecvCallCount).Should(BeNumerically(">", 3))
@@ -183,6 +207,33 @@ func (s *spyMapper) F(event *definitions.Event) (*loggregator_v2.Envelope, error
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.Envelope, s.convertError
+}
+
+type spyTokener struct {
+	getTokenCallCount     int64
+	refreshTokenCallCount int64
+}
+
+func newSpyTokener() *spyTokener {
+	return &spyTokener{}
+}
+
+func (t *spyTokener) GetToken() (string, error) {
+	atomic.AddInt64(&t.getTokenCallCount, 1)
+	return "", nil
+}
+
+func (t *spyTokener) GetTokenCallCount() int64 {
+	return atomic.LoadInt64(&t.getTokenCallCount)
+}
+
+func (t *spyTokener) RefershToken() (string, error) {
+	atomic.AddInt64(&t.refreshTokenCallCount, 1)
+	return "", nil
+}
+
+func (t *spyTokener) RefreshTokenCallCount() int64 {
+	return atomic.LoadInt64(&t.refreshTokenCallCount)
 }
 
 var envelope = &loggregator_v2.Envelope{
