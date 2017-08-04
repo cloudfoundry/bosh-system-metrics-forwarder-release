@@ -10,8 +10,8 @@ import (
 
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/definitions"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/codes"
 )
 
 type receiver interface {
@@ -31,6 +31,7 @@ type Ingress struct {
 
 	mu                  sync.Mutex
 	metricsServerCancel context.CancelFunc
+	subscriptionID string
 }
 
 var (
@@ -49,11 +50,12 @@ func init() {
 	droppedCounter = expvar.NewInt("ingress.dropped")
 }
 
-func New(s definitions.EgressClient, m mapper, messages chan *loggregator_v2.Envelope) *Ingress {
+func New(s definitions.EgressClient, m mapper, messages chan *loggregator_v2.Envelope, sID string) *Ingress {
 	return &Ingress{
 		client:   s,
 		convert:  m,
 		messages: messages,
+		subscriptionID: sID,
 	}
 }
 
@@ -125,7 +127,7 @@ func (i *Ingress) establishStream() (definitions.Egress_BoshMetricsClient, error
 	return i.client.BoshMetrics(
 		metricsServerCtx,
 		&definitions.EgressRequest{
-			SubscriptionId: "bosh-system-metrics-forwarder",
+			SubscriptionId: i.subscriptionID,
 		},
 	)
 }

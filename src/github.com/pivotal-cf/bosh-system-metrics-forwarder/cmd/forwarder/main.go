@@ -40,6 +40,8 @@ func main() {
 	metricsCA := flag.String("metrics-ca", "", "The CA cert path for the metrics server")
 	metricsCN := flag.String("metrics-cn", "", "The common name for the metrics server")
 
+	subscriptionID := flag.String("subscription-id", "bosh-system-metrics-forwarder", "The subscription id to use for the metrics server")
+
 	healthPort := flag.Int("health-port", 19111, "The port for the localhost health endpoint")
 	flag.Parse()
 
@@ -99,7 +101,7 @@ func main() {
 	}()
 
 	messages := make(chan *loggregator_v2.Envelope, 100)
-	i := ingress.New(serverClient, mapper.Map, messages)
+	i := ingress.New(serverClient, mapper.Map, messages, *subscriptionID)
 	e := egress.New(metronStreamClient, messages)
 
 	ingressStop := i.Start()

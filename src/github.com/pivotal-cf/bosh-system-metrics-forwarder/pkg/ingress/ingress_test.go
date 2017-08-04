@@ -25,7 +25,7 @@ func TestStartProcessesEvents(t *testing.T) {
 	mapper := newSpyMapper(envelope, nil)
 	messages := make(chan *loggregator_v2.Envelope, 1)
 
-	i := ingress.New(client, mapper.F, messages)
+	i := ingress.New(client, mapper.F, messages, "sub-id")
 	defer i.Start()()
 
 	Eventually(messages).Should(Receive(Equal(envelope)))
@@ -41,7 +41,7 @@ func TestStartRetriesUponReceiveError(t *testing.T) {
 	mapper := newSpyMapper(envelope, nil)
 	messages := make(chan *loggregator_v2.Envelope, 1)
 
-	i := ingress.New(client, mapper.F, messages)
+	i := ingress.New(client, mapper.F, messages, "sub-id")
 	defer i.Start()()
 
 	Eventually(client.BoshMetricsCallCount).Should(BeNumerically(">", 1))
@@ -81,7 +81,7 @@ func TestStartContinuesUponConversionError(t *testing.T) {
 	mapper := newSpyMapper(envelope, errors.New("conversion error"))
 	messages := make(chan *loggregator_v2.Envelope, 1)
 
-	i := ingress.New(client, mapper.F, messages)
+	i := ingress.New(client, mapper.F, messages, "sub-id")
 	defer i.Start()()
 
 	Consistently(messages).ShouldNot(Receive())
@@ -99,7 +99,7 @@ func TestStartDoesNotBlockSendingEnvelopes(t *testing.T) {
 	mapper := newSpyMapper(envelope, nil)
 	messages := make(chan *loggregator_v2.Envelope, 2)
 
-	i := ingress.New(client, mapper.F, messages)
+	i := ingress.New(client, mapper.F, messages, "sub-id")
 	defer i.Start()()
 
 	Eventually(receiver.RecvCallCount).Should(BeNumerically(">", 3))
