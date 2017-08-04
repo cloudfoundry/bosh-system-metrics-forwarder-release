@@ -10,8 +10,8 @@ import (
 
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/definitions"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
-	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type receiver interface {
@@ -31,7 +31,7 @@ type Ingress struct {
 
 	mu                  sync.Mutex
 	metricsServerCancel context.CancelFunc
-	subscriptionID string
+	subscriptionID      string
 }
 
 var (
@@ -52,20 +52,31 @@ func init() {
 
 func New(s definitions.EgressClient, m mapper, messages chan *loggregator_v2.Envelope, sID string) *Ingress {
 	return &Ingress{
-		client:   s,
-		convert:  m,
-		messages: messages,
-		subscriptionID: sID,
+		client:              s,
+		convert:             m,
+		messages:            messages,
+		subscriptionID:      sID,
+		metricsServerCancel: func() {},
 	}
 }
 
 func (i *Ingress) Start() func() {
 	log.Println("Starting ingestor...")
+	done := make(chan struct{})
+	stop := make(chan struct{})
+
 	go func() {
+		defer close(done)
+
 		for {
+			select {
+			case <-stop:
+				return
+			default:
+			}
+
 			metricsStreamClient, err := i.establishStream()
 			if err != nil {
-
 				s, ok := status.FromError(err)
 				if ok && s.Code() == codes.PermissionDenied {
 					log.Fatalf("Authorization failure: %s", err)
@@ -73,7 +84,7 @@ func (i *Ingress) Start() func() {
 
 				connErrCounter.Add(1)
 				log.Printf("error creating stream connection to metrics server: %s", err)
-				time.Sleep(250 * time.Millisecond)
+				time.Sleep(time.Second)
 				continue
 			}
 
@@ -88,10 +99,14 @@ func (i *Ingress) Start() func() {
 	}()
 
 	return func() {
+		log.Println("Closing connection to metrics server")
+
 		i.mu.Lock()
 		defer i.mu.Unlock()
 
 		i.metricsServerCancel()
+		close(stop)
+		<-done
 	}
 }
 
@@ -120,8 +135,8 @@ func (i *Ingress) processMessages(client definitions.Egress_BoshMetricsClient) e
 func (i *Ingress) establishStream() (definitions.Egress_BoshMetricsClient, error) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
-	metricsServerCtx, metricsServerCancel := context.WithCancel(context.Background())
 
+	metricsServerCtx, metricsServerCancel := context.WithCancel(context.Background())
 	i.metricsServerCancel = metricsServerCancel
 
 	return i.client.BoshMetrics(

@@ -6,8 +6,12 @@ import (
 
 	"sync"
 
+	"sync/atomic"
+
+	"io/ioutil"
+	"log"
+
 	. "github.com/onsi/gomega"
-	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/definitions"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/egress"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
 )
@@ -19,7 +23,7 @@ func TestStartProcessesEvents(t *testing.T) {
 	messages := make(chan *loggregator_v2.Envelope)
 
 	egress := egress.New(sender, messages)
-	defer egress.Start()()
+	egress.Start()
 
 	messages <- envelope
 
@@ -28,12 +32,13 @@ func TestStartProcessesEvents(t *testing.T) {
 
 func TestStartRetriesUponSendError(t *testing.T) {
 	RegisterTestingT(t)
+
 	sender := newSpySender()
 	sender.SendError(errors.New("some error"))
 	messages := make(chan *loggregator_v2.Envelope)
 
 	egress := egress.New(sender, messages)
-	defer egress.Start()()
+	egress.Start()
 
 	messages <- envelope
 
@@ -44,10 +49,32 @@ func TestStartRetriesUponSendError(t *testing.T) {
 	Eventually(sender.SentEnvelopes).Should(Receive(Equal(envelope)))
 }
 
+func TestStopDrainsMessagesBeforeClosing(t *testing.T) {
+	RegisterTestingT(t)
+	log.SetOutput(ioutil.Discard)
+
+	sender := newSpySender()
+	messages := make(chan *loggregator_v2.Envelope, 100)
+	egress := egress.New(sender, messages)
+	stop := egress.Start()
+
+	for i := 0; i < 100; i++ {
+		messages <- envelope
+	}
+
+	close(messages)
+	Expect(len(messages)).To(BeNumerically(">", 0))
+	stop()
+
+	Expect(messages).To(HaveLen(0))
+	Expect(sender.CloseAndRecvCallCount()).To(BeNumerically("==", 1))
+}
+
 type spySender struct {
-	mu            sync.Mutex
-	sendError     error
-	SentEnvelopes chan *loggregator_v2.Envelope
+	mu                    sync.Mutex
+	sendError             error
+	SentEnvelopes         chan *loggregator_v2.Envelope
+	closeAndRecvCallCount int32
 }
 
 func newSpySender() *spySender {
@@ -73,6 +100,15 @@ func (s *spySender) Send(e *loggregator_v2.Envelope) error {
 	return nil
 }
 
+func (s *spySender) CloseAndRecv() (*loggregator_v2.IngressResponse, error) {
+	atomic.AddInt32(&s.closeAndRecvCallCount, 1)
+	return nil, nil
+}
+
+func (s *spySender) CloseAndRecvCallCount() int32 {
+	return atomic.LoadInt32(&s.closeAndRecvCallCount)
+}
+
 var envelope = &loggregator_v2.Envelope{
 	Timestamp: 1499293724,
 	Tags: map[string]*loggregator_v2.Value{
@@ -96,33 +132,6 @@ var envelope = &loggregator_v2.Envelope{
 		Gauge: &loggregator_v2.Gauge{
 			Metrics: map[string]*loggregator_v2.GaugeValue{
 				"system.healthy": {Value: 1, Unit: "b"},
-			},
-		},
-	},
-}
-
-var heartbeatEvent = &definitions.Event{
-	Id:         "55b68400-f984-4f76-b341-cf849e07d4f9",
-	Timestamp:  1499293724,
-	Deployment: "loggregator",
-	Message: &definitions.Event_Heartbeat{
-		Heartbeat: &definitions.Heartbeat{
-			AgentId:    "2accd102-37e7-4dd6-b337-b3f87da97914",
-			Job:        "consul",
-			Index:      4,
-			InstanceId: "6f60a3ce-9e4d-477f-ba45-7d29bcfab5b9",
-			JobState:   "running",
-			Metrics: []*definitions.Heartbeat_Metric{
-				{
-					Name:      "system.healthy",
-					Value:     1,
-					Timestamp: 1499293724,
-					Tags: map[string]string{
-						"job":   "consul",
-						"index": "0",
-						"id":    "6f60a3ce-9e4d-477f-ba45-7d29bcfab5b9",
-					},
-				},
 			},
 		},
 	},

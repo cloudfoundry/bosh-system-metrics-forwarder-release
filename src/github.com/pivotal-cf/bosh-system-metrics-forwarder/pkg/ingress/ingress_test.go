@@ -15,6 +15,7 @@ import (
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"time"
 )
 
 func TestStartProcessesEvents(t *testing.T) {
@@ -26,7 +27,7 @@ func TestStartProcessesEvents(t *testing.T) {
 	messages := make(chan *loggregator_v2.Envelope, 1)
 
 	i := ingress.New(client, mapper.F, messages, "sub-id")
-	defer i.Start()()
+	i.Start()
 
 	Eventually(messages).Should(Receive(Equal(envelope)))
 }
@@ -42,7 +43,7 @@ func TestStartRetriesUponReceiveError(t *testing.T) {
 	messages := make(chan *loggregator_v2.Envelope, 1)
 
 	i := ingress.New(client, mapper.F, messages, "sub-id")
-	defer i.Start()()
+	i.Start()
 
 	Eventually(client.BoshMetricsCallCount).Should(BeNumerically(">", 1))
 
@@ -82,7 +83,7 @@ func TestStartContinuesUponConversionError(t *testing.T) {
 	messages := make(chan *loggregator_v2.Envelope, 1)
 
 	i := ingress.New(client, mapper.F, messages, "sub-id")
-	defer i.Start()()
+	i.Start()
 
 	Consistently(messages).ShouldNot(Receive())
 
@@ -100,10 +101,27 @@ func TestStartDoesNotBlockSendingEnvelopes(t *testing.T) {
 	messages := make(chan *loggregator_v2.Envelope, 2)
 
 	i := ingress.New(client, mapper.F, messages, "sub-id")
-	defer i.Start()()
+	i.Start()
 
 	Eventually(receiver.RecvCallCount).Should(BeNumerically(">", 3))
+}
 
+func TestStartDoesNotReconnectAfterStopping(t *testing.T) {
+	RegisterTestingT(t)
+
+	receiver := newSpyReceiver()
+	receiver.RecvError(grpc.ErrClientConnClosing)
+	client := newSpyEgressClient(receiver, nil)
+	mapper := newSpyMapper(envelope, nil)
+	messages := make(chan *loggregator_v2.Envelope, 2)
+
+	i := ingress.New(client, mapper.F, messages, "sub-id")
+	stop := i.Start()
+
+	time.Sleep(time.Millisecond)
+	stop()
+
+	Consistently(client.BoshMetricsCallCount).Should(Equal(int64(1)))
 }
 
 type spyEgressClient struct {

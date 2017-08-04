@@ -10,6 +10,7 @@ import (
 
 type sender interface {
 	Send(*loggregator_v2.Envelope) error
+	CloseAndRecv() (*loggregator_v2.IngressResponse, error)
 }
 
 type Egress struct {
@@ -35,6 +36,7 @@ func New(s sender, m chan *loggregator_v2.Envelope) *Egress {
 }
 
 func (e *Egress) Start() func() {
+	done := make(chan struct{})
 
 	go func() {
 		log.Println("Starting forwarder...")
@@ -47,9 +49,13 @@ func (e *Egress) Start() func() {
 			}
 			sentCounter.Add(1)
 		}
+		close(done)
 	}()
 
-	return func() {}
+	return func() {
+		<-done
+		e.snd.CloseAndRecv()
+	}
 }
 
 func (e *Egress) sendWithRetry(envelope *loggregator_v2.Envelope) error {
