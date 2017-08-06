@@ -1,6 +1,7 @@
 package ingress_test
 
 import (
+	"fmt"
 	"sync/atomic"
 	"testing"
 
@@ -18,6 +19,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -57,6 +59,25 @@ func TestStartRetriesUponReceiveError(t *testing.T) {
 	Eventually(messages).Should(Receive(Equal(envelope)))
 }
 
+func TestStartGetsToken(t *testing.T) {
+	RegisterTestingT(t)
+
+	receiver := newSpyReceiver()
+	client := newSpyEgressClient(receiver, nil)
+	mapper := newSpyMapper(envelope, nil)
+	messages := make(chan *loggregator_v2.Envelope, 1)
+	tokener := newSpyTokener()
+
+	i := ingress.New(client, mapper.F, messages, tokener, "sub-id")
+	i.Start()
+
+	Eventually(tokener.TokenCallCount).Should(Equal(int32(1)))
+	Eventually(client.BoshMetricsCallCount).Should(Equal(int32(1)))
+	md, ok := metadata.FromOutgoingContext(client.LatestContext())
+	Expect(ok).To(BeTrue())
+	Expect(md["authorization"][0]).To(Equal("token0"))
+}
+
 func TestStartRefreshesTokenUponPermissionDeniedError(t *testing.T) {
 	RegisterTestingT(t)
 
@@ -69,32 +90,16 @@ func TestStartRefreshesTokenUponPermissionDeniedError(t *testing.T) {
 	messages := make(chan *loggregator_v2.Envelope, 1)
 	tokener := newSpyTokener()
 
-	i := ingress.New(client, mapper.F, messages, tokener)
-	defer i.Start()()
+	i := ingress.New(client, mapper.F, messages, tokener, "sub-id")
+	i.Start()
 
-	Eventually(tokener.RefreshTokenCallCount).Should(BeNumerically(">", 1))
+	Eventually(tokener.TokenCallCount).Should(BeNumerically(">", 1))
+	Eventually(client.BoshMetricsCallCount, "2s").Should(BeNumerically(">", 1))
+	md, ok := metadata.FromOutgoingContext(client.LatestContext())
+	Expect(ok).To(BeTrue())
+	// token0 is the first token generated. We want a different token.
+	Expect(md["authorization"][0]).ToNot(Equal("token0"))
 }
-
-//func TestStartPanicsUponPermissionDeniedError(t *testing.T) {
-//	RegisterTestingT(t)
-//	log.SetOutput(ioutil.Discard)
-//	//defer func() {
-//	//	if r := recover(); r == nil {
-//	//		t.Errorf("The code did not panic")
-//	//	}
-//	//}()
-//
-//	receiver := newSpyReceiver()
-//	receiver.RecvError(errors.New("some error"))
-//	client := newSpyEgressClient(receiver, status.Error(codes.PermissionDenied, "some error message"))
-//	mapper := newSpyMapper(envelope, nil)
-//	messages := make(chan *loggregator_v2.Envelope, 1)
-//
-//	i := ingress.New(client, mapper.F, messages)
-//	Expect(func() {
-//		i.Start()
-//	}).To(Panic())
-//}
 
 func TestStartContinuesUponConversionError(t *testing.T) {
 	RegisterTestingT(t)
@@ -139,20 +144,24 @@ func TestStartDoesNotReconnectAfterStopping(t *testing.T) {
 	client := newSpyEgressClient(receiver, nil)
 	mapper := newSpyMapper(envelope, nil)
 	messages := make(chan *loggregator_v2.Envelope, 2)
+	tokener := newSpyTokener()
 
-	i := ingress.New(client, mapper.F, messages, "sub-id")
+	i := ingress.New(client, mapper.F, messages, tokener, "sub-id")
 	stop := i.Start()
 
 	time.Sleep(time.Millisecond)
 	stop()
 
-	Consistently(client.BoshMetricsCallCount).Should(Equal(int64(1)))
+	Consistently(client.BoshMetricsCallCount).Should(Equal(int32(1)))
 }
 
 type spyEgressClient struct {
-	boshMetricsCallCount int64
+	boshMetricsCallCount int32
 	receiver             definitions.Egress_BoshMetricsClient
 	err                  error
+
+	mu  sync.Mutex
+	ctx context.Context
 }
 
 func newSpyEgressClient(recv definitions.Egress_BoshMetricsClient, err error) *spyEgressClient {
@@ -163,18 +172,27 @@ func newSpyEgressClient(recv definitions.Egress_BoshMetricsClient, err error) *s
 }
 
 func (c *spyEgressClient) BoshMetrics(ctx context.Context, r *definitions.EgressRequest, opts ...grpc.CallOption) (definitions.Egress_BoshMetricsClient, error) {
-	atomic.AddInt64(&c.boshMetricsCallCount, 1)
+	atomic.AddInt32(&c.boshMetricsCallCount, 1)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.ctx = ctx
 	return c.receiver, c.err
 }
 
-func (c *spyEgressClient) BoshMetricsCallCount() int64 {
-	return atomic.LoadInt64(&c.boshMetricsCallCount)
+func (c *spyEgressClient) LatestContext() context.Context {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.ctx
+}
+
+func (c *spyEgressClient) BoshMetricsCallCount() int32 {
+	return atomic.LoadInt32(&c.boshMetricsCallCount)
 }
 
 type spyReceiver struct {
 	mu            sync.Mutex
 	recvError     error
-	recvCallCount int64
+	recvCallCount int32
 	grpc.ClientStream
 }
 
@@ -192,15 +210,15 @@ func (r *spyReceiver) Recv() (*definitions.Event, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	atomic.AddInt64(&r.recvCallCount, 1)
+	atomic.AddInt32(&r.recvCallCount, 1)
 	if r.recvError != nil {
 		return nil, r.recvError
 	}
 	return &definitions.Event{}, nil
 }
 
-func (r *spyReceiver) RecvCallCount() int64 {
-	return atomic.LoadInt64(&r.recvCallCount)
+func (r *spyReceiver) RecvCallCount() int32 {
+	return atomic.LoadInt32(&r.recvCallCount)
 }
 
 type spyMapper struct {
@@ -229,30 +247,36 @@ func (s *spyMapper) F(event *definitions.Event) (*loggregator_v2.Envelope, error
 }
 
 type spyTokener struct {
-	getTokenCallCount     int64
-	refreshTokenCallCount int64
+	tokenCallCount int32
+	err            error
 }
 
-func newSpyTokener() *spyTokener {
-	return &spyTokener{}
+type spyTokenOpt func(*spyTokener)
+
+func WithError(e string) spyTokenOpt {
+	return func(t *spyTokener) {
+		t.err = errors.New(e)
+	}
 }
 
-func (t *spyTokener) GetToken() (string, error) {
-	atomic.AddInt64(&t.getTokenCallCount, 1)
-	return "", nil
+func newSpyTokener(opts ...spyTokenOpt) *spyTokener {
+	t := &spyTokener{}
+
+	for _, o := range opts {
+		o(t)
+	}
+
+	return t
 }
 
-func (t *spyTokener) GetTokenCallCount() int64 {
-	return atomic.LoadInt64(&t.getTokenCallCount)
+func (t *spyTokener) Token() (string, error) {
+	token := fmt.Sprintf("token%d", atomic.LoadInt32(&t.tokenCallCount))
+	atomic.AddInt32(&t.tokenCallCount, 1)
+	return token, nil
 }
 
-func (t *spyTokener) RefershToken() (string, error) {
-	atomic.AddInt64(&t.refreshTokenCallCount, 1)
-	return "", nil
-}
-
-func (t *spyTokener) RefreshTokenCallCount() int64 {
-	return atomic.LoadInt64(&t.refreshTokenCallCount)
+func (t *spyTokener) TokenCallCount() int32 {
+	return atomic.LoadInt32(&t.tokenCallCount)
 }
 
 var envelope = &loggregator_v2.Envelope{

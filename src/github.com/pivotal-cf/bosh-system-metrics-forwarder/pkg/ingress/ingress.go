@@ -24,7 +24,7 @@ type sender interface {
 }
 
 type tokener interface {
-	GetToken() (string, error)
+	Token() (string, error)
 }
 
 type mapper func(event *definitions.Event) (*loggregator_v2.Envelope, error)
@@ -81,11 +81,11 @@ func (i *Ingress) Start() func() {
 	go func() {
 		defer close(done)
 
+		token, err := i.auth.Token()
+		if err != nil {
+			log.Fatalf("unable to get token: %s", err)
+		}
 		for {
-			token, err := i.auth.GetToken()
-			// if err != nil {
-			// 	log.Fatalf("unable to get token, cannot establish stream: %s", err)
-			// }
 			select {
 			case <-stop:
 				return
@@ -96,10 +96,11 @@ func (i *Ingress) Start() func() {
 			if err != nil {
 				s, ok := status.FromError(err)
 				if ok && s.Code() == codes.PermissionDenied {
-					log.Printf("Authorization failure, retrieving token: %s", err)
-					token, _ := i.auth.GetToken()
-					// TODO: handle err
-					i.establishStream(token)
+					log.Printf("authorization failure, retrieving token: %s", err)
+					token, err = i.auth.Token()
+					if err != nil {
+						log.Fatalf("unable to refresh token: %s", err)
+					}
 				} else {
 					connErrCounter.Add(1)
 					log.Printf("error creating stream connection to metrics server: %s", err)
@@ -111,13 +112,12 @@ func (i *Ingress) Start() func() {
 				log.Printf("error creating stream connection to metrics server: %s", err)
 				time.Sleep(time.Second)
 				continue
-
 			}
 
 			err = i.processMessages(metricsStreamClient)
 			if err != nil {
 				receiveErrCounter.Add(1)
-				log.Printf("Error receiving from metrics server: %s", err)
+				log.Printf("error receiving from metrics server: %s", err)
 				time.Sleep(250 * time.Millisecond)
 				continue
 			}
@@ -125,7 +125,7 @@ func (i *Ingress) Start() func() {
 	}()
 
 	return func() {
-		log.Println("Closing connection to metrics server")
+		log.Println("closing connection to metrics server")
 
 		i.mu.Lock()
 		defer i.mu.Unlock()
@@ -160,7 +160,7 @@ func (i *Ingress) processMessages(client definitions.Egress_BoshMetricsClient) e
 
 func (i *Ingress) establishStream(token string) (definitions.Egress_BoshMetricsClient, error) {
 	md := metadata.Pairs("authorization", token)
-	ctx := metadata.NewContext(context.Background(), md)
+	ctx := metadata.NewOutgoingContext(context.Background(), md)
 	metricsServerCtx, metricsServerCancel := context.WithCancel(ctx)
 
 	i.mu.Lock()
