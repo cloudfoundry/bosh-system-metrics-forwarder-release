@@ -18,9 +18,11 @@ type Auth struct {
 	httpClient   *http.Client
 	addrProvider addresser
 	authAddr     string
+	clientID     string
+	clientSecret string
 }
 
-func New(a addresser, tlsConfig *tls.Config) *Auth {
+func New(a addresser, clientID string, clientSecret string, tlsConfig *tls.Config) *Auth {
 	return &Auth{
 		httpClient: &http.Client{
 			Transport: &http.Transport{
@@ -29,6 +31,8 @@ func New(a addresser, tlsConfig *tls.Config) *Auth {
 			Timeout: 30 * time.Second,
 		},
 		addrProvider: a,
+		clientID:     clientID,
+		clientSecret: clientSecret,
 	}
 }
 
@@ -36,15 +40,15 @@ type authResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
-func (a *Auth) Token(clientId, clientSecret string) (string, error) {
+func (a *Auth) Token() (string, error) {
 	addr, err := a.addrProvider.Addr()
 	if err != nil {
 		return "", err
 	}
 
 	form := url.Values{}
-	form.Set("client_id", clientId)
-	form.Set("client_secret", clientSecret)
+	form.Set("client_id", a.clientID)
+	form.Set("client_secret", a.clientSecret)
 	form.Set("grant_type", "client_credentials")
 	form.Set("response_type", "token")
 

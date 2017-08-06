@@ -28,8 +28,8 @@ func TestToken(t *testing.T) {
 	clientSecret := "asddnbhkasdhasd123"
 	addresser := newSpyAddresser(testAuthServer.URL, nil)
 
-	client := auth.New(addresser, nil)
-	token, err := client.Token(clientId, clientSecret)
+	client := auth.New(addresser, clientId, clientSecret, nil)
+	token, err := client.Token()
 
 	Expect(err).ToNot(HaveOccurred())
 	Expect(token).To(Equal(expectedToken))
@@ -50,8 +50,8 @@ func TestTokenWithFailingAddresser(t *testing.T) {
 
 	addresser := newSpyAddresser("", errors.New("some-err"))
 
-	client := auth.New(addresser, nil)
-	_, err := client.Token("unused", "unused")
+	client := auth.New(addresser, "unused", "unused", nil)
+	_, err := client.Token()
 
 	Expect(err).To(HaveOccurred())
 }
@@ -65,8 +65,8 @@ func TestTokenWithFailingAuthRequest(t *testing.T) {
 
 	addresser := newSpyAddresser(testAuthServer.URL, nil)
 
-	client := auth.New(addresser, nil)
-	_, err := client.Token("unused", "unused")
+	client := auth.New(addresser, "unused", "unused", nil)
+	_, err := client.Token()
 
 	Expect(err).To(HaveOccurred())
 }
@@ -80,8 +80,8 @@ func TestTokenWithUnparseableAuthRequest(t *testing.T) {
 
 	addresser := newSpyAddresser(testAuthServer.URL, nil)
 
-	client := auth.New(addresser, nil)
-	_, err := client.Token("unused", "unused")
+	client := auth.New(addresser, "unused", "unused", nil)
+	_, err := client.Token()
 
 	Expect(err).To(HaveOccurred())
 }
