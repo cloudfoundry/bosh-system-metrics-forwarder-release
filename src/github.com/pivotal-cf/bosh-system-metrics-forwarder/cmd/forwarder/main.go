@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -31,12 +30,12 @@ func main() {
 	clientIdentity := flag.String("auth-client-identity", "", "The UAA client identity which has access to bosh system metrics")
 	clientSecret := flag.String("auth-client-secret", "", "The UAA client password")
 
-	metricsServerAddr := flag.String("metrics-server-addr", "", "The host and port of the metrics server")
-	metronPort := flag.String("metron-port", "3458", "The GRPC port to inject metrics to")
+	metronPort := flag.Int("metron-port", 3458, "The GRPC port to inject metrics to")
 	metronCA := flag.String("metron-ca", "", "The CA cert path for metron")
 	metronCert := flag.String("metron-cert", "", "The cert path for metron")
 	metronKey := flag.String("metron-key", "", "The key path for metron")
 
+	metricsServerAddr := flag.String("metrics-server-addr", "", "The host and port of the metrics server")
 	metricsCA := flag.String("metrics-ca", "", "The CA cert path for the metrics server")
 	metricsCN := flag.String("metrics-cn", "", "The common name for the metrics server")
 
@@ -50,43 +49,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	authClient := auth.New(*directorURL, directorTLSConf)
-	authToken, err := authClient.GetToken(*clientIdentity, *clientSecret)
-	if err != nil {
-		log.Fatalf("could not get token from AuthServer: %v", err)
-	}
+
+	addressProvider := auth.NewAddressProvider(*directorURL, directorTLSConf)
+	authClient := auth.New(addressProvider, *clientIdentity, *clientSecret, directorTLSConf)
 
 	// server setup (ingress)
-	serverTLSConf := &tls.Config{
-		ServerName: *metricsCN,
-	}
-	err = setCACert(serverTLSConf, *metricsCA)
-	if err != nil {
-		log.Fatal(err)
-	}
-	serverConn, err := grpc.Dial(
-		*metricsServerAddr,
-		grpc.WithTransportCredentials(credentials.NewTLS(serverTLSConf)),
-		grpc.WithPerRPCCredentials(auth.MapGRPCCreds(authToken)),
-	)
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
-	serverClient := definitions.NewEgressClient(serverConn)
-
+	serverClient, serverConnClose := setupConnToMetricsServer(*metricsServerAddr, *metricsCN, *metricsCA)
 	// metron setup (egress)
-	c, err := newTLSConfig(*metronCA, *metronCert, *metronKey, "metron")
-	if err != nil {
-		log.Fatalf("unable to read tls certs: %s", err)
-	}
-	metronConn, err := grpc.Dial(
-		net.JoinHostPort("localhost", *metronPort),
-		grpc.WithTransportCredentials(credentials.NewTLS(c)),
-	)
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
-	metronClient := loggregator_v2.NewIngressClient(metronConn)
+	metronClient, metronConnClose := setupConnToMetron(*metronPort, *metronCA, *metronCert, *metronKey)
 
 	metronCtx, metronCancel := context.WithCancel(context.Background())
 	metronStreamClient, err := metronClient.Sender(metronCtx)
@@ -101,26 +71,60 @@ func main() {
 	}()
 
 	messages := make(chan *loggregator_v2.Envelope, 100)
-	i := ingress.New(serverClient, mapper.Map, messages, *subscriptionID)
+	i := ingress.New(serverClient, mapper.Map, messages, authClient, *subscriptionID)
 	e := egress.New(metronStreamClient, messages)
 
 	ingressStop := i.Start()
 	egressStop := e.Start()
 
 	defer func() {
-		serverConn.Close()
+		serverConnClose()
 		ingressStop()
 
 		close(messages)
 
 		egressStop()
 		metronCancel()
-		metronConn.Close()
+		metronConnClose()
 	}()
 
 	killSignal := make(chan os.Signal, 1)
 	signal.Notify(killSignal, syscall.SIGINT, syscall.SIGTERM)
 	<-killSignal
+}
+
+func setupConnToMetron(metronPort int, metronCA, metronCert, metronKey string) (loggregator_v2.IngressClient, func() error) {
+	c, err := newTLSConfig(metronCA, metronCert, metronKey, "metron")
+	if err != nil {
+		log.Fatalf("unable to read tls certs: %s", err)
+	}
+	metronConn, err := grpc.Dial(
+		fmt.Sprintf("localhost:%d", metronPort),
+		grpc.WithTransportCredentials(credentials.NewTLS(c)),
+	)
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+	return loggregator_v2.NewIngressClient(metronConn), metronConn.Close
+}
+
+func setupConnToMetricsServer(addr, cn, ca string) (definitions.EgressClient, func() error) {
+	serverTLSConf := &tls.Config{
+		ServerName: cn,
+	}
+	err := setCACert(serverTLSConf, ca)
+	if err != nil {
+		log.Fatal(err)
+	}
+	serverConn, err := grpc.Dial(
+		addr,
+		grpc.WithTransportCredentials(credentials.NewTLS(serverTLSConf)),
+	)
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+
+	return definitions.NewEgressClient(serverConn), serverConn.Close
 }
 
 func newTLSConfig(caPath, certPath, keyPath, cn string) (*tls.Config, error) {
