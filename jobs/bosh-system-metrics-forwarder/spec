@@ -25,6 +25,9 @@ properties:
     description: "The CA certificate used to sign the server's tls certificate"
   metrics_forwarder.tls.common_name:
     description: "The common name used to sign the server's tls certificate"
+  metrics_forwarder.subscription_id:
+    description: "The subscription id to use for the metrics server"
+    default: "bosh-system-metrics-forwarder"
   metrics_forwarder.health_port:
     description: "The port used to obtain health metrics on localhost"
     default: 19111

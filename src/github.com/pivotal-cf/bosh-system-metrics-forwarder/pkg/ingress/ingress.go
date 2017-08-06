@@ -5,11 +5,11 @@ import (
 	"log"
 	"time"
 
-	"context"
 	"sync"
 
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/definitions"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -37,6 +37,7 @@ type Ingress struct {
 
 	mu                  sync.Mutex
 	metricsServerCancel context.CancelFunc
+	subscriptionID      string
 }
 
 var (
@@ -60,30 +61,43 @@ func New(
 	m mapper,
 	messages chan *loggregator_v2.Envelope,
 	auth tokener,
+	sID string,
 ) *Ingress {
 	return &Ingress{
-		client:   s,
-		convert:  m,
-		messages: messages,
-		auth:     auth,
+		client:              s,
+		convert:             m,
+		messages:            messages,
+		auth:                auth,
+		subscriptionID:      sID,
+		metricsServerCancel: func() {},
 	}
 }
 
 func (i *Ingress) Start() func() {
 	log.Println("Starting ingestor...")
+	done := make(chan struct{})
+	stop := make(chan struct{})
+
 	go func() {
+		defer close(done)
+
 		for {
 			token, err := i.auth.GetToken()
 			// if err != nil {
 			// 	log.Fatalf("unable to get token, cannot establish stream: %s", err)
 			// }
+			select {
+			case <-stop:
+				return
+			default:
+			}
+
 			metricsStreamClient, err := i.establishStream(token)
 			if err != nil {
-
 				s, ok := status.FromError(err)
 				if ok && s.Code() == codes.PermissionDenied {
 					log.Printf("Authorization failure, retrieving token: %s", err)
-					token, _ := i.auth.RefreshToken()
+					token, _ := i.auth.GetToken()
 					// TODO: handle err
 					i.establishStream(token)
 				} else {
@@ -92,6 +106,12 @@ func (i *Ingress) Start() func() {
 					time.Sleep(250 * time.Millisecond)
 					continue
 				}
+
+				connErrCounter.Add(1)
+				log.Printf("error creating stream connection to metrics server: %s", err)
+				time.Sleep(time.Second)
+				continue
+
 			}
 
 			err = i.processMessages(metricsStreamClient)
@@ -105,10 +125,14 @@ func (i *Ingress) Start() func() {
 	}()
 
 	return func() {
+		log.Println("Closing connection to metrics server")
+
 		i.mu.Lock()
 		defer i.mu.Unlock()
 
 		i.metricsServerCancel()
+		close(stop)
+		<-done
 	}
 }
 
@@ -135,19 +159,18 @@ func (i *Ingress) processMessages(client definitions.Egress_BoshMetricsClient) e
 }
 
 func (i *Ingress) establishStream(token string) (definitions.Egress_BoshMetricsClient, error) {
-	i.mu.Lock()
-	defer i.mu.Unlock()
-
 	md := metadata.Pairs("authorization", token)
-	ctx := metadata.NewContext(context.Background())
+	ctx := metadata.NewContext(context.Background(), md)
 	metricsServerCtx, metricsServerCancel := context.WithCancel(ctx)
 
+	i.mu.Lock()
+	defer i.mu.Unlock()
 	i.metricsServerCancel = metricsServerCancel
 
 	return i.client.BoshMetrics(
 		metricsServerCtx,
 		&definitions.EgressRequest{
-			SubscriptionId: "bosh-system-metrics-forwarder",
+			SubscriptionId: i.subscriptionID,
 		},
 	)
 }
