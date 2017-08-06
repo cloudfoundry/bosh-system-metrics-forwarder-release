@@ -1,21 +1,26 @@
 package auth
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
-	"crypto/tls"
 )
 
-type Auth struct {
-	httpClient *http.Client
-	infoURL    string
+type addresser interface {
+	Addr() (string, error)
 }
 
-func New(infoAddr string, tlsConfig *tls.Config) *Auth {
+type Auth struct {
+	httpClient   *http.Client
+	addrProvider addresser
+	authAddr     string
+}
+
+func New(a addresser, tlsConfig *tls.Config) *Auth {
 	return &Auth{
 		httpClient: &http.Client{
 			Transport: &http.Transport{
@@ -23,46 +28,16 @@ func New(infoAddr string, tlsConfig *tls.Config) *Auth {
 			},
 			Timeout: 30 * time.Second,
 		},
-		infoURL: infoAddr,
+		addrProvider: a,
 	}
-}
-
-type infoResponse struct {
-	UserAuthentication struct {
-		AuthType string `json:"type"`
-		Options  struct {
-			Url string `json:"url"`
-		} `json:"options"`
-	} `json:"user_authentication"`
 }
 
 type authResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
-func (a *Auth) getServerAddr() (string, error) {
-	resp, err := a.httpClient.Get(fmt.Sprintf("%s/info", a.infoURL))
-	if err != nil {
-		return "", err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("info endpoint returned bad status code: %d", resp.StatusCode)
-	}
-	defer resp.Body.Close()
-
-	var info infoResponse
-	decoder := json.NewDecoder(resp.Body)
-	err = decoder.Decode(&info)
-	if err != nil {
-		return "", err
-	}
-
-	return info.UserAuthentication.Options.Url, nil
-}
-
-func (a *Auth) GetToken(clientId, clientSecret string) (string, error) {
-	addr, err := a.getServerAddr()
+func (a *Auth) Token(clientId, clientSecret string) (string, error) {
+	addr, err := a.addrProvider.Addr()
 	if err != nil {
 		return "", err
 	}

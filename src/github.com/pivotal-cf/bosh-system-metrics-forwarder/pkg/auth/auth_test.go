@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"errors"
 	"testing"
 
 	"net/http"
@@ -15,7 +16,7 @@ import (
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/auth"
 )
 
-func TestGetToken(t *testing.T) {
+func TestToken(t *testing.T) {
 	RegisterTestingT(t)
 
 	expectedToken := "test-access-token"
@@ -23,16 +24,12 @@ func TestGetToken(t *testing.T) {
 	testAuthServer := httptest.NewServer(sas)
 	defer testAuthServer.Close()
 
-	sis := newSpyInfoServer(validInfoResponse(testAuthServer.URL), 200)
-	testInfoServer := httptest.NewServer(sis)
-	defer testInfoServer.Close()
-	directorAddr := testInfoServer.URL
-
 	clientId := "system-metrics-server"
 	clientSecret := "asddnbhkasdhasd123"
+	addresser := newSpyAddresser(testAuthServer.URL, nil)
 
-	client := auth.New(directorAddr, nil)
-	token, err := client.GetToken(clientId, clientSecret)
+	client := auth.New(addresser, nil)
+	token, err := client.Token(clientId, clientSecret)
 
 	Expect(err).ToNot(HaveOccurred())
 	Expect(token).To(Equal(expectedToken))
@@ -48,66 +45,43 @@ func TestGetToken(t *testing.T) {
 	Expect(receivedRequest.Form.Get("client_secret")).To(Equal(clientSecret))
 }
 
-func TestGetToken_withFailingInfoRequest(t *testing.T) {
+func TestTokenWithFailingAddresser(t *testing.T) {
 	RegisterTestingT(t)
 
-	sis := newSpyInfoServer(validInfoResponse(""), 500)
-	testInfoServer := httptest.NewServer(sis)
-	defer testInfoServer.Close()
-	directorAddr := testInfoServer.URL
+	addresser := newSpyAddresser("", errors.New("some-err"))
 
-	client := auth.New(directorAddr, nil)
-	_, err := client.GetToken("unused", "unused")
+	client := auth.New(addresser, nil)
+	_, err := client.Token("unused", "unused")
 
 	Expect(err).To(HaveOccurred())
 }
 
-func TestGetToken_withUnparseableInfoRequest(t *testing.T) {
-	RegisterTestingT(t)
-
-	sis := newSpyInfoServer("wont-parse-json", 200)
-	testInfoServer := httptest.NewServer(sis)
-	defer testInfoServer.Close()
-	directorAddr := testInfoServer.URL
-
-	client := auth.New(directorAddr, nil)
-	_, err := client.GetToken("unused", "unused")
-
-	Expect(err).To(HaveOccurred())
-}
-
-func TestGetToken_withFailingAuthRequest(t *testing.T) {
+func TestTokenWithFailingAuthRequest(t *testing.T) {
 	RegisterTestingT(t)
 
 	sas := newSpyAuthServer("unused", 500)
 	testAuthServer := httptest.NewServer(sas)
 	defer testAuthServer.Close()
 
-	sis := newSpyInfoServer(validInfoResponse(testAuthServer.URL), 200)
-	testInfoServer := httptest.NewServer(sis)
-	defer testInfoServer.Close()
-	directorAddr := testInfoServer.URL
+	addresser := newSpyAddresser(testAuthServer.URL, nil)
 
-	client := auth.New(directorAddr, nil)
-	_, err := client.GetToken("unused", "unused")
+	client := auth.New(addresser, nil)
+	_, err := client.Token("unused", "unused")
 
 	Expect(err).To(HaveOccurred())
 }
 
-func TestGetToken_withUnparseableAuthRequest(t *testing.T) {
+func TestTokenWithUnparseableAuthRequest(t *testing.T) {
 	RegisterTestingT(t)
 
 	sas := newSpyAuthServer("wont-parse-json", 200)
 	testAuthServer := httptest.NewServer(sas)
 	defer testAuthServer.Close()
 
-	sis := newSpyInfoServer(validInfoResponse(testAuthServer.URL), 200)
-	testInfoServer := httptest.NewServer(sis)
-	defer testInfoServer.Close()
-	directorAddr := testInfoServer.URL
+	addresser := newSpyAddresser(testAuthServer.URL, nil)
 
-	client := auth.New(directorAddr, nil)
-	_, err := client.GetToken("unused", "unused")
+	client := auth.New(addresser, nil)
+	_, err := client.Token("unused", "unused")
 
 	Expect(err).To(HaveOccurred())
 }
@@ -117,16 +91,12 @@ func validAuthResponse(token string) string {
 	return fmt.Sprintf(responseTemplate, token)
 }
 
-func validInfoResponse(authAddr string) string {
-	responseTemplate := `{"name":"Bosh Lite Director","uuid":"3f20c4a3-0ef0-4443-8f39-efef33f502a7","version":"262.3.0 (00000000)","user":null,"cpi":"warden_cpi","user_authentication":{"type":"uaa","options":{"url":"%0s","urls":["%0s"]}},"features":{"dns":{"status":false,"extras":{"domain_name":"bosh"}},"compiled_package_cache":{"status":false,"extras":{"provider":null}},"snapshots":{"status":false},"config_server":{"status":false,"extras":{"urls":[]}}}}`
-	return fmt.Sprintf(responseTemplate, authAddr)
-}
-
 type spyAuthServer struct {
+	body   string
+	status int
+
 	mu          sync.Mutex
 	lastRequest *http.Request
-	body        string
-	status      int
 }
 
 func newSpyAuthServer(body string, status int) *spyAuthServer {
@@ -147,21 +117,18 @@ func (a *spyAuthServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(a.body))
 }
 
-type spyInfoServer struct {
-	body   string
-	status int
+type spyAddresser struct {
+	url string
+	err error
 }
 
-func newSpyInfoServer(body string, status int) *spyInfoServer {
-	return &spyInfoServer{
-		body:   body,
-		status: status,
+func newSpyAddresser(url string, err error) *spyAddresser {
+	return &spyAddresser{
+		url: url,
+		err: err,
 	}
 }
 
-func (a *spyInfoServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path == "/info" {
-		w.WriteHeader(a.status)
-		w.Write([]byte(a.body))
-	}
+func (a *spyAddresser) Addr() (string, error) {
+	return a.url, a.err
 }
