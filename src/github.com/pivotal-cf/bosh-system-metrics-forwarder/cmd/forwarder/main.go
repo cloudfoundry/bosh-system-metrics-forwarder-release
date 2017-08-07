@@ -30,7 +30,6 @@ func main() {
 
 	clientIdentity := flag.String("auth-client-identity", "", "The UAA client identity which has access to bosh system metrics")
 	clientSecret := flag.String("auth-client-secret", "", "The UAA client password")
-	validateCredentials(*clientIdentity, *clientSecret)
 
 	metronPort := flag.Int("metron-port", 3458, "The GRPC port to inject metrics to")
 	metronCA := flag.String("metron-ca", "", "The CA cert path for metron")
@@ -45,6 +44,8 @@ func main() {
 
 	healthPort := flag.Int("health-port", 19111, "The port for the localhost health endpoint")
 	flag.Parse()
+
+	validateCredentials(*clientIdentity, *clientSecret)
 
 	directorTLSConf := &tls.Config{}
 	err := setCACert(directorTLSConf, *directorCA)
@@ -101,7 +102,7 @@ func main() {
 	<-killSignal
 }
 
-func validateCredentials(id string, secret string) {
+func validateCredentials(id, secret string) {
 	if id == "" || secret == "" {
 		log.Fatalf("UAA System Metrics Client Credentials are required. Please see Bosh System Metrics Forwarder configuration")
 	}
