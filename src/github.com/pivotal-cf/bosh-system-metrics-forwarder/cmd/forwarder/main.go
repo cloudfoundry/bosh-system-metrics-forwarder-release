@@ -27,8 +27,10 @@ import (
 func main() {
 	directorURL := flag.String("director-url", "", "The url of the bosh director")
 	directorCA := flag.String("director-ca", "", "The CA cert path for the bosh director")
+
 	clientIdentity := flag.String("auth-client-identity", "", "The UAA client identity which has access to bosh system metrics")
 	clientSecret := flag.String("auth-client-secret", "", "The UAA client password")
+	validateCredentials(*clientIdentity, *clientSecret)
 
 	metronPort := flag.Int("metron-port", 3458, "The GRPC port to inject metrics to")
 	metronCA := flag.String("metron-ca", "", "The CA cert path for metron")
@@ -65,6 +67,8 @@ func main() {
 	}
 
 	go func() {
+		fmt.Printf("starting health endpoint on http://localhost:%d/health", *healthPort)
+
 		mux := http.NewServeMux()
 		mux.Handle("/health", expvar.Handler())
 		http.ListenAndServe(fmt.Sprintf("localhost:%d", *healthPort), mux)
@@ -78,19 +82,29 @@ func main() {
 	egressStop := e.Start()
 
 	defer func() {
+		fmt.Println("process shutting down, stop accepting messages from system metrics server...")
 		serverConnClose()
 		ingressStop()
 
 		close(messages)
 
+		fmt.Println("drain remaining messages...")
 		egressStop()
 		metronCancel()
 		metronConnClose()
+
+		fmt.Println("DONE")
 	}()
 
 	killSignal := make(chan os.Signal, 1)
 	signal.Notify(killSignal, syscall.SIGINT, syscall.SIGTERM)
 	<-killSignal
+}
+
+func validateCredentials(id string, secret string) {
+	if id == "" || secret == "" {
+		log.Fatalf("UAA System Metrics Client Credentials are required. Please see Bosh System Metrics Forwarder configuration")
+	}
 }
 
 func setupConnToMetron(metronPort int, metronCA, metronCert, metronKey string) (loggregator_v2.IngressClient, func() error) {
