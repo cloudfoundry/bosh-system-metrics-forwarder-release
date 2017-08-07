@@ -115,14 +115,10 @@ func (i *Ingress) Start() func() {
 				if ok && s.Code() == codes.PermissionDenied {
 					log.Printf("authorization failure, retrieving token: %s", err)
 					token, err = i.auth.Token()
+
 					if err != nil {
 						log.Fatalf("unable to refresh token: %s", err)
 					}
-				} else {
-					connErrCounter.Add(1)
-					log.Printf("error creating stream connection to metrics server: %s", err)
-					time.Sleep(250 * time.Millisecond)
-					continue
 				}
 
 				connErrCounter.Add(1)
