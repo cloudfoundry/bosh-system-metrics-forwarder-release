@@ -14,26 +14,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type receiver interface {
-	Recv() (*definitions.Event, error)
-}
-
-type sender interface {
-	Send(*loggregator_v2.Envelope) error
-}
-
-type mapper func(event *definitions.Event) (*loggregator_v2.Envelope, error)
-
-type Ingress struct {
-	convert  mapper
-	messages chan *loggregator_v2.Envelope
-	client   definitions.EgressClient
-
-	mu                  sync.Mutex
-	metricsServerCancel context.CancelFunc
-	subscriptionID      string
-}
-
 var (
 	connErrCounter    *expvar.Int
 	receiveErrCounter *expvar.Int
@@ -50,14 +30,56 @@ func init() {
 	droppedCounter = expvar.NewInt("ingress.dropped")
 }
 
-func New(s definitions.EgressClient, m mapper, messages chan *loggregator_v2.Envelope, sID string) *Ingress {
-	return &Ingress{
+type receiver interface {
+	Recv() (*definitions.Event, error)
+}
+
+type sender interface {
+	Send(*loggregator_v2.Envelope) error
+}
+
+type mapper func(event *definitions.Event) (*loggregator_v2.Envelope, error)
+
+type Ingress struct {
+	convert        mapper
+	messages       chan *loggregator_v2.Envelope
+	client         definitions.EgressClient
+	reconnectWait  time.Duration
+	subscriptionID string
+
+	mu                  sync.Mutex
+	metricsServerCancel context.CancelFunc
+}
+
+type IngressOpt func(*Ingress)
+
+func WithReconnectWait(d time.Duration) IngressOpt {
+	return func(i *Ingress) {
+		i.reconnectWait = d
+	}
+}
+
+func New(
+	s definitions.EgressClient,
+	m mapper,
+	messages chan *loggregator_v2.Envelope,
+	sID string,
+	opts ...IngressOpt,
+) *Ingress {
+	i := &Ingress{
 		client:              s,
 		convert:             m,
 		messages:            messages,
 		subscriptionID:      sID,
 		metricsServerCancel: func() {},
+		reconnectWait:       time.Second,
 	}
+
+	for _, o := range opts {
+		o(i)
+	}
+
+	return i
 }
 
 func (i *Ingress) Start() func() {
@@ -84,7 +106,7 @@ func (i *Ingress) Start() func() {
 
 				connErrCounter.Add(1)
 				log.Printf("error creating stream connection to metrics server: %s", err)
-				time.Sleep(time.Second)
+				time.Sleep(i.reconnectWait)
 				continue
 			}
 
@@ -104,8 +126,8 @@ func (i *Ingress) Start() func() {
 		i.mu.Lock()
 		defer i.mu.Unlock()
 
-		i.metricsServerCancel()
 		close(stop)
+		i.metricsServerCancel()
 		<-done
 	}
 }
