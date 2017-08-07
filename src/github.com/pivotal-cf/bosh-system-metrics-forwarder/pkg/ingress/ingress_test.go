@@ -25,6 +25,7 @@ import (
 
 func TestStartProcessesEvents(t *testing.T) {
 	RegisterTestingT(t)
+	log.SetOutput(ioutil.Discard)
 
 	receiver := newSpyReceiver()
 	client := newSpyEgressClient(receiver, nil)
@@ -49,7 +50,7 @@ func TestStartRetriesUponReceiveError(t *testing.T) {
 	messages := make(chan *loggregator_v2.Envelope, 1)
 	tokener := newSpyTokener()
 
-	i := ingress.New(client, mapper.F, messages, tokener, "sub-id")
+	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", ingress.WithReconnectWait(time.Millisecond))
 	i.Start()
 
 	Eventually(client.BoshMetricsCallCount).Should(BeNumerically(">", 1))
@@ -68,7 +69,7 @@ func TestStartGetsToken(t *testing.T) {
 	messages := make(chan *loggregator_v2.Envelope, 1)
 	tokener := newSpyTokener()
 
-	i := ingress.New(client, mapper.F, messages, tokener, "sub-id")
+	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", ingress.WithReconnectWait(time.Millisecond))
 	i.Start()
 
 	Eventually(tokener.TokenCallCount).Should(Equal(int32(1)))
@@ -111,7 +112,7 @@ func TestStartContinuesUponConversionError(t *testing.T) {
 	messages := make(chan *loggregator_v2.Envelope, 1)
 	tokener := newSpyTokener()
 
-	i := ingress.New(client, mapper.F, messages, tokener, "sub-id")
+	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", ingress.WithReconnectWait(time.Millisecond))
 	i.Start()
 
 	Consistently(messages).ShouldNot(Receive())
@@ -130,7 +131,7 @@ func TestStartDoesNotBlockSendingEnvelopes(t *testing.T) {
 	messages := make(chan *loggregator_v2.Envelope, 2)
 	tokener := newSpyTokener()
 
-	i := ingress.New(client, mapper.F, messages, tokener, "sub-id")
+	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", ingress.WithReconnectWait(time.Millisecond))
 	i.Start()
 
 	Eventually(receiver.RecvCallCount).Should(BeNumerically(">", 3))
@@ -146,7 +147,7 @@ func TestStartDoesNotReconnectAfterStopping(t *testing.T) {
 	messages := make(chan *loggregator_v2.Envelope, 2)
 	tokener := newSpyTokener()
 
-	i := ingress.New(client, mapper.F, messages, tokener, "sub-id")
+	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", ingress.WithReconnectWait(time.Millisecond))
 	stop := i.Start()
 
 	time.Sleep(time.Millisecond)
