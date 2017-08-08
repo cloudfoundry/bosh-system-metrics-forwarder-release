@@ -46,7 +46,7 @@ type tokener interface {
 type mapper func(event *definitions.Event) (*loggregator_v2.Envelope, error)
 
 type Ingress struct {
-	auth     tokener
+	auth           tokener
 	convert        mapper
 	messages       chan *loggregator_v2.Envelope
 	client         definitions.EgressClient
