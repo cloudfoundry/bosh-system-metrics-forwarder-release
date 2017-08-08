@@ -127,6 +127,8 @@ func (i *Ingress) Start() func() {
 				continue
 			}
 
+			log.Println("metrics server stream created")
+
 			err = i.processMessages(metricsStreamClient)
 			if err != nil {
 				receiveErrCounter.Add(1)
