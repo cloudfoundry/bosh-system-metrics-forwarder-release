@@ -74,7 +74,7 @@ func (e *Egress) Start() func() {
 
 			err = e.processMessages(snd)
 			if err != nil {
-				log.Printf("error sending to log agent: %s", err)
+				log.Printf("error sending to log agent: %s\n", err)
 				sendErrCounter.Add(1)
 			}
 		}

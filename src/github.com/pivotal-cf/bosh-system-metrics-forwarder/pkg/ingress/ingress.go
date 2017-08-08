@@ -113,7 +113,7 @@ func (i *Ingress) Start() func() {
 			if err != nil {
 				s, ok := status.FromError(err)
 				if ok && s.Code() == codes.PermissionDenied {
-					log.Printf("authorization failure, retrieving token: %s", err)
+					log.Printf("authorization failure, retrieving token: %s\n", err)
 					token, err = i.auth.Token()
 
 					if err != nil {
@@ -122,7 +122,7 @@ func (i *Ingress) Start() func() {
 				}
 
 				connErrCounter.Add(1)
-				log.Printf("error creating stream connection to metrics server: %s", err)
+				log.Printf("error creating stream connection to metrics server: %s\n", err)
 				time.Sleep(i.reconnectWait)
 				continue
 			}
@@ -132,7 +132,7 @@ func (i *Ingress) Start() func() {
 			err = i.processMessages(metricsStreamClient)
 			if err != nil {
 				receiveErrCounter.Add(1)
-				log.Printf("error receiving from metrics server: %s", err)
+				log.Printf("error receiving from metrics server: %s\n", err)
 				time.Sleep(250 * time.Millisecond)
 				continue
 			}
