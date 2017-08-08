@@ -14,15 +14,18 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/egress"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 func TestStartProcessesEvents(t *testing.T) {
 	RegisterTestingT(t)
 
 	sender := newSpySender()
+	client := newSpyEgressClient(sender)
 	messages := make(chan *loggregator_v2.Envelope)
 
-	egress := egress.New(sender, messages)
+	egress := egress.New(client, messages)
 	egress.Start()
 
 	messages <- envelope
@@ -35,9 +38,10 @@ func TestStartRetriesUponSendError(t *testing.T) {
 
 	sender := newSpySender()
 	sender.SendError(errors.New("some error"))
+	client := newSpyEgressClient(sender)
 	messages := make(chan *loggregator_v2.Envelope)
 
-	egress := egress.New(sender, messages)
+	egress := egress.New(client, messages)
 	egress.Start()
 
 	messages <- envelope
@@ -54,8 +58,9 @@ func TestStopDrainsMessagesBeforeClosing(t *testing.T) {
 	log.SetOutput(ioutil.Discard)
 
 	sender := newSpySender()
+	client := newSpyEgressClient(sender)
 	messages := make(chan *loggregator_v2.Envelope, 100)
-	egress := egress.New(sender, messages)
+	egress := egress.New(client, messages)
 	stop := egress.Start()
 
 	for i := 0; i < 100; i++ {
@@ -70,11 +75,30 @@ func TestStopDrainsMessagesBeforeClosing(t *testing.T) {
 	Expect(sender.CloseAndRecvCallCount()).To(BeNumerically("==", 1))
 }
 
+type spyEgressClient struct {
+	senderCallCount int32
+	spySender       *spySender
+}
+
+func newSpyEgressClient(s *spySender) *spyEgressClient {
+	return &spyEgressClient{
+		spySender: s,
+	}
+}
+
+func (s *spyEgressClient) Sender(ctx context.Context, opts ...grpc.CallOption) (loggregator_v2.Ingress_SenderClient, error) {
+	atomic.AddInt32(&s.senderCallCount, 1)
+
+	return s.spySender, nil
+}
+
 type spySender struct {
 	mu                    sync.Mutex
 	sendError             error
 	SentEnvelopes         chan *loggregator_v2.Envelope
 	closeAndRecvCallCount int32
+
+	grpc.ClientStream
 }
 
 func newSpySender() *spySender {

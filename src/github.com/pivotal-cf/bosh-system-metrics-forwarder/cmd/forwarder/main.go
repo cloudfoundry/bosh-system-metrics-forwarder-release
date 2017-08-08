@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"expvar"
@@ -56,16 +55,18 @@ func main() {
 	addressProvider := auth.NewAddressProvider(*directorURL, directorTLSConf)
 	authClient := auth.New(addressProvider, *clientIdentity, *clientSecret, directorTLSConf)
 
+	messages := make(chan *loggregator_v2.Envelope, 100)
+
 	// server setup (ingress)
 	serverClient, serverConnClose := setupConnToMetricsServer(*metricsServerAddr, *metricsCN, *metricsCA)
+	i := ingress.New(serverClient, mapper.Map, messages, authClient, *subscriptionID)
+
 	// metron setup (egress)
 	metronClient, metronConnClose := setupConnToMetron(*metronPort, *metronCA, *metronCert, *metronKey)
+	e := egress.New(metronClient, messages)
 
-	metronCtx, metronCancel := context.WithCancel(context.Background())
-	metronStreamClient, err := metronClient.Sender(metronCtx)
-	if err != nil {
-		log.Fatalf("error creating stream connection to metron: %s", err)
-	}
+	ingressStop := i.Start()
+	egressStop := e.Start()
 
 	go func() {
 		fmt.Printf("starting health endpoint on http://localhost:%d/health", *healthPort)
@@ -74,13 +75,6 @@ func main() {
 		mux.Handle("/health", expvar.Handler())
 		http.ListenAndServe(fmt.Sprintf("localhost:%d", *healthPort), mux)
 	}()
-
-	messages := make(chan *loggregator_v2.Envelope, 100)
-	i := ingress.New(serverClient, mapper.Map, messages, authClient, *subscriptionID)
-	e := egress.New(metronStreamClient, messages)
-
-	ingressStop := i.Start()
-	egressStop := e.Start()
 
 	defer func() {
 		fmt.Println("process shutting down, stop accepting messages from system metrics server...")
@@ -91,7 +85,6 @@ func main() {
 
 		fmt.Println("drain remaining messages...")
 		egressStop()
-		metronCancel()
 		metronConnClose()
 
 		fmt.Println("DONE")
