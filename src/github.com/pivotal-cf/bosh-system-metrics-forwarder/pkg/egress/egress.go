@@ -21,7 +21,7 @@ type sender interface {
 
 type Egress struct {
 	messages chan *loggregator_v2.Envelope
-	client client
+	client   client
 }
 
 var (
@@ -42,35 +42,60 @@ func New(c client, m chan *loggregator_v2.Envelope) *Egress {
 }
 
 func (e *Egress) Start() func() {
+	log.Println("Starting forwarder...")
+
 	done := make(chan struct{})
-
-	snd, _ := e.client.Sender(context.Background())
-
-	metronCtx, metronCancel := context.WithCancel(context.Background())
-	snd, err := e.client.Sender(metronCtx)
-	if err != nil {
-		log.Fatalf("error creating stream connection to metron: %s", err)
-	}
+	stop := make(chan struct{})
 
 	go func() {
-		log.Println("Starting forwarder...")
-		for envelope := range e.messages {
-			err := e.sendWithRetry(snd, envelope)
+		defer close(done)
+
+		var (
+			snd loggregator_v2.Ingress_SenderClient
+			err error
+		)
+
+		for {
+			select {
+			case <-stop:
+				if snd != nil {
+					snd.CloseAndRecv()
+				}
+				return
+			default:
+			}
+
+			ctx, _ := context.WithTimeout(context.Background(), 10 * time.Second)
+			snd, err = e.client.Sender(ctx)
+			if err != nil {
+				log.Fatalf("error creating stream connection to metron: %s", err)
+			}
+
+			err = e.processMessages(snd)
 			if err != nil {
 				log.Printf("Error sending to log agent: %s", err)
 				sendErrCounter.Add(1)
-				continue
 			}
-			sentCounter.Add(1)
 		}
-		close(done)
 	}()
 
 	return func() {
+		close(stop)
 		<-done
-		snd.CloseAndRecv()
-		metronCancel()
 	}
+}
+
+func (e *Egress) processMessages(snd loggregator_v2.Ingress_SenderClient) error {
+	for envelope := range e.messages {
+		err := e.sendWithRetry(snd, envelope)
+		if err != nil {
+			return err
+		}
+
+		sentCounter.Add(1)
+	}
+
+	return nil
 }
 
 func (e *Egress) sendWithRetry(snd sender, envelope *loggregator_v2.Envelope) error {

@@ -75,6 +75,24 @@ func TestStopDrainsMessagesBeforeClosing(t *testing.T) {
 	Expect(sender.CloseAndRecvCallCount()).To(BeNumerically("==", 1))
 }
 
+func TestStartReconnectsOnSendError(t *testing.T) {
+	RegisterTestingT(t)
+	log.SetOutput(ioutil.Discard)
+
+	sender := newSpySender()
+	sender.SendError(errors.New("some error"))
+
+	client := newSpyEgressClient(sender)
+	messages := make(chan *loggregator_v2.Envelope, 100)
+	egress := egress.New(client, messages)
+
+	egress.Start()
+
+	messages <- envelope
+
+	Eventually(client.SenderCallCount).Should(BeNumerically(">", 1))
+}
+
 type spyEgressClient struct {
 	senderCallCount int32
 	spySender       *spySender
@@ -90,6 +108,10 @@ func (s *spyEgressClient) Sender(ctx context.Context, opts ...grpc.CallOption) (
 	atomic.AddInt32(&s.senderCallCount, 1)
 
 	return s.spySender, nil
+}
+
+func (s *spyEgressClient) SenderCallCount() int32 {
+	return atomic.LoadInt32(&s.senderCallCount)
 }
 
 type spySender struct {
