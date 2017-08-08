@@ -11,6 +11,8 @@ import (
 	"io/ioutil"
 	"log"
 
+	"time"
+
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/egress"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
@@ -20,6 +22,7 @@ import (
 
 func TestStartProcessesEvents(t *testing.T) {
 	RegisterTestingT(t)
+	log.SetOutput(ioutil.Discard)
 
 	sender := newSpySender()
 	client := newSpyEgressClient(sender)
@@ -35,6 +38,7 @@ func TestStartProcessesEvents(t *testing.T) {
 
 func TestStartRetriesUponSendError(t *testing.T) {
 	RegisterTestingT(t)
+	log.SetOutput(ioutil.Discard)
 
 	sender := newSpySender()
 	sender.SendError(errors.New("some error"))
@@ -61,14 +65,17 @@ func TestStopDrainsMessagesBeforeClosing(t *testing.T) {
 	client := newSpyEgressClient(sender)
 	messages := make(chan *loggregator_v2.Envelope, 100)
 	egress := egress.New(client, messages)
-	stop := egress.Start()
 
 	for i := 0; i < 100; i++ {
 		messages <- envelope
 	}
 
-	close(messages)
+	stop := egress.Start()
+
+	Eventually(client.SenderCallCount).Should(BeNumerically(">", 0))
 	Expect(len(messages)).To(BeNumerically(">", 0))
+
+	close(messages)
 	stop()
 
 	Expect(messages).To(HaveLen(0))
@@ -141,6 +148,8 @@ func (s *spySender) Send(e *loggregator_v2.Envelope) error {
 	if s.sendError != nil {
 		return s.sendError
 	}
+
+	time.Sleep(10 * time.Millisecond)
 
 	s.SentEnvelopes <- e
 	return nil
