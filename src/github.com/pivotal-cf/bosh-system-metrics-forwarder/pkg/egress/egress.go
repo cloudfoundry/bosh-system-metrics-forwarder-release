@@ -65,8 +65,7 @@ func (e *Egress) Start() func() {
 			default:
 			}
 
-			ctx, _ := context.WithTimeout(context.Background(), 10 * time.Second)
-			snd, err = e.client.Sender(ctx)
+			snd, err = e.client.Sender(context.Background())
 			if err != nil {
 				log.Fatalf("error creating stream connection to metron: %s", err)
 			}
