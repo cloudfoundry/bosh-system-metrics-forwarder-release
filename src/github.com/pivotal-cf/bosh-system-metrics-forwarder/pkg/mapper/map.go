@@ -3,6 +3,8 @@ package mapper
 import (
 	"errors"
 
+	"log"
+
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/definitions"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
 )
@@ -10,7 +12,9 @@ import (
 func Map(event *definitions.Event) (*loggregator_v2.Envelope, error) {
 	switch event.Message.(type) {
 	case *definitions.Event_Heartbeat:
-		return mapHeartbeat(event), nil
+		env := mapHeartbeat(event)
+		log.Printf("Loggregator Envelope: %v\n", env)
+		return env, nil
 	default:
 		return nil, errors.New("metric type not supported")
 	}
