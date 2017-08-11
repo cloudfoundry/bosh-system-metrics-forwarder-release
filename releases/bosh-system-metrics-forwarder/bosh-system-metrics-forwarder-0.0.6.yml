@@ -1,0 +1,21 @@
+name: bosh-system-metrics-forwarder
+version: 0.0.6
+commit_hash: 9c32758
+uncommitted_changes: false
+jobs:
+- name: bosh-system-metrics-forwarder
+  version: bb94aa7eb5c4c5bb7e3e37b437de8b56c03e91ac
+  fingerprint: bb94aa7eb5c4c5bb7e3e37b437de8b56c03e91ac
+  sha1: a7f6dd63df127fd0076f1d56e3c06205da2926e5
+packages:
+- name: bosh-system-metrics-forwarder
+  version: bab57ed6d2e00aa7da367739f3f853a95e392c63
+  fingerprint: bab57ed6d2e00aa7da367739f3f853a95e392c63
+  sha1: e984e4ba19425d4bdc91d4445ae89fb230bd21a0
+  dependencies:
+  - golang1.8.3
+- name: golang1.8.3
+  version: 6b1bfba0bc0455c57678161490ce4fa4fd5f70f4
+  fingerprint: 6b1bfba0bc0455c57678161490ce4fa4fd5f70f4
+  sha1: 026fe578e29ee52091417fe067742ced3271d47f
+  dependencies: []
