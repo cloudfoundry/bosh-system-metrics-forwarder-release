@@ -21,7 +21,7 @@ func TestStartProcessesEvents(t *testing.T) {
 	log.SetOutput(ioutil.Discard)
 
 	sender := newSpySender()
-	client := newSpyEgressClient(sender)
+	client := newSpyEgressClient(sender, nil)
 	messages := make(chan *loggregator_v2.Envelope)
 
 	egress := egress.New(client, messages)
@@ -38,7 +38,7 @@ func TestStartDoesNotDropMessageWhenConnectionDies(t *testing.T) {
 
 	sender := newSpySender()
 	sender.SendError(errors.New("some error"))
-	client := newSpyEgressClient(sender)
+	client := newSpyEgressClient(sender, nil)
 	messages := make(chan *loggregator_v2.Envelope)
 
 	egress := egress.New(client, messages)
@@ -58,7 +58,7 @@ func TestStopDrainsMessagesBeforeClosing(t *testing.T) {
 	log.SetOutput(ioutil.Discard)
 
 	sender := newSpySender()
-	client := newSpyEgressClient(sender)
+	client := newSpyEgressClient(sender, nil)
 	messages := make(chan *loggregator_v2.Envelope, 100)
 	egress := egress.New(client, messages)
 
@@ -78,6 +78,21 @@ func TestStopDrainsMessagesBeforeClosing(t *testing.T) {
 	Expect(sender.CloseAndRecvCallCount()).To(BeNumerically("==", 1))
 }
 
+func TestStartReconnectsWhenClientUnableToCreateSender(t *testing.T) {
+	RegisterTestingT(t)
+	log.SetOutput(ioutil.Discard)
+
+	client := newSpyEgressClient(nil, errors.New("metron is down"))
+	messages := make(chan *loggregator_v2.Envelope, 100)
+	egress := egress.New(client, messages)
+
+	egress.Start()
+
+	messages <- envelope
+
+	Eventually(client.SenderCallCount).Should(BeNumerically(">", 1))
+}
+
 func TestStartReconnectsOnSendError(t *testing.T) {
 	RegisterTestingT(t)
 	log.SetOutput(ioutil.Discard)
@@ -85,7 +100,7 @@ func TestStartReconnectsOnSendError(t *testing.T) {
 	sender := newSpySender()
 	sender.SendError(errors.New("some error"))
 
-	client := newSpyEgressClient(sender)
+	client := newSpyEgressClient(sender, nil)
 	messages := make(chan *loggregator_v2.Envelope, 100)
 	egress := egress.New(client, messages)
 
@@ -99,18 +114,20 @@ func TestStartReconnectsOnSendError(t *testing.T) {
 type spyEgressClient struct {
 	senderCallCount int32
 	spySender       *spySender
+	err             error
 }
 
-func newSpyEgressClient(s *spySender) *spyEgressClient {
+func newSpyEgressClient(s *spySender, e error) *spyEgressClient {
 	return &spyEgressClient{
 		spySender: s,
+		err:       e,
 	}
 }
 
 func (s *spyEgressClient) Sender(ctx context.Context, opts ...grpc.CallOption) (loggregator_v2.Ingress_SenderClient, error) {
 	atomic.AddInt32(&s.senderCallCount, 1)
 
-	return s.spySender, nil
+	return s.spySender, s.err
 }
 
 func (s *spyEgressClient) SenderCallCount() int32 {

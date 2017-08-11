@@ -71,7 +71,10 @@ func (e *Egress) Start() func() {
 
 			snd, err = e.client.Sender(context.Background())
 			if err != nil {
-				log.Fatalf("error creating stream connection to metron: %s", err)
+				log.Printf("error creating stream connection to metron: %s", err)
+				sendErrCounter.Add(1)
+				time.Sleep(100 * time.Millisecond)
+				continue
 			}
 
 			log.Println("metron stream created")
@@ -80,9 +83,9 @@ func (e *Egress) Start() func() {
 			if err != nil {
 				log.Printf("error sending to log agent: %s\n", err)
 				sendErrCounter.Add(1)
+				time.Sleep(100 * time.Millisecond)
 			}
 
-			time.Sleep(100 * time.Millisecond)
 		}
 	}()
 

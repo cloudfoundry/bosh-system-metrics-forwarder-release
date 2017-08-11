@@ -55,7 +55,7 @@ func main() {
 	addressProvider := auth.NewAddressProvider(*directorURL, directorTLSConf)
 	authClient := auth.New(addressProvider, *clientIdentity, *clientSecret, directorTLSConf)
 
-	messages := make(chan *loggregator_v2.Envelope, 100)
+	messages := make(chan *loggregator_v2.Envelope, 1024)
 
 	// server setup (ingress)
 	serverClient, serverConnClose := setupConnToMetricsServer(*metricsServerAddr, *metricsCN, *metricsCA)
