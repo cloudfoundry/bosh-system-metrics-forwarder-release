@@ -139,6 +139,7 @@ func TestStartDoesNotBlockSendingEnvelopes(t *testing.T) {
 
 func TestStartDoesNotReconnectAfterStopping(t *testing.T) {
 	RegisterTestingT(t)
+	log.SetOutput(ioutil.Discard)
 
 	receiver := newSpyReceiver()
 	receiver.RecvError(grpc.ErrClientConnClosing)
@@ -147,10 +148,11 @@ func TestStartDoesNotReconnectAfterStopping(t *testing.T) {
 	messages := make(chan *loggregator_v2.Envelope, 2)
 	tokener := newSpyTokener()
 
-	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", ingress.WithReconnectWait(time.Millisecond))
+	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", ingress.WithReconnectWait(250*time.Millisecond))
 	stop := i.Start()
 
-	time.Sleep(time.Millisecond)
+	Eventually(client.BoshMetricsCallCount).Should(Equal(int32(1)))
+
 	stop()
 
 	Consistently(client.BoshMetricsCallCount).Should(Equal(int32(1)))
