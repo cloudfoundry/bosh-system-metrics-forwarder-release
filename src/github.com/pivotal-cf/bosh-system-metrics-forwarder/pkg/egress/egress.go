@@ -20,24 +20,28 @@ type sender interface {
 }
 
 type Egress struct {
-	messages chan *loggregator_v2.Envelope
+	messages <-chan *loggregator_v2.Envelope
 	client   client
+	retry    chan *loggregator_v2.Envelope
 }
 
 var (
 	sendErrCounter *expvar.Int
+	droppedCounter *expvar.Int
 	sentCounter    *expvar.Int
 )
 
 func init() {
 	sendErrCounter = expvar.NewInt("egress.send_err")
+	droppedCounter = expvar.NewInt("egress.dropped")
 	sentCounter = expvar.NewInt("egress.sent")
 }
 
-func New(c client, m chan *loggregator_v2.Envelope) *Egress {
+func New(c client, m <-chan *loggregator_v2.Envelope) *Egress {
 	return &Egress{
 		client:   c,
 		messages: m,
+		retry:    make(chan *loggregator_v2.Envelope, 1),
 	}
 }
 
@@ -77,6 +81,8 @@ func (e *Egress) Start() func() {
 				log.Printf("error sending to log agent: %s\n", err)
 				sendErrCounter.Add(1)
 			}
+
+			time.Sleep(100 * time.Millisecond)
 		}
 	}()
 
@@ -87,9 +93,15 @@ func (e *Egress) Start() func() {
 }
 
 func (e *Egress) processMessages(snd loggregator_v2.Ingress_SenderClient) error {
+	err := e.processRetries(snd)
+	if err != nil {
+		return err
+	}
+
 	for envelope := range e.messages {
-		err := e.sendWithRetry(snd, envelope)
+		err := snd.Send(envelope)
 		if err != nil {
+			e.retryLater(envelope)
 			return err
 		}
 
@@ -99,17 +111,27 @@ func (e *Egress) processMessages(snd loggregator_v2.Ingress_SenderClient) error 
 	return nil
 }
 
-func (e *Egress) sendWithRetry(snd sender, envelope *loggregator_v2.Envelope) error {
-	var err error
+func (e *Egress) retryLater(envelope *loggregator_v2.Envelope) {
+	select {
+	case e.retry <- envelope:
+	default:
+		droppedCounter.Add(1)
+	}
+}
 
-	for i := 0; i < 3; i++ {
-		err = snd.Send(envelope)
-		if err == nil {
+func (e *Egress) processRetries(snd sender) error {
+	for {
+		select {
+		case envelope := <-e.retry:
+			err := snd.Send(envelope)
+			if err != nil {
+				droppedCounter.Add(1)
+				return err
+			}
+
+			sentCounter.Add(1)
+		default:
 			return nil
 		}
-
-		time.Sleep(100 * time.Millisecond)
 	}
-
-	return err
 }

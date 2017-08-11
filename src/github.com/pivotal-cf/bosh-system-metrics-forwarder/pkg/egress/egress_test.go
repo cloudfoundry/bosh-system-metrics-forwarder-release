@@ -2,15 +2,11 @@ package egress_test
 
 import (
 	"errors"
-	"testing"
-
-	"sync"
-
-	"sync/atomic"
-
 	"io/ioutil"
 	"log"
-
+	"sync"
+	"sync/atomic"
+	"testing"
 	"time"
 
 	. "github.com/onsi/gomega"
@@ -36,7 +32,7 @@ func TestStartProcessesEvents(t *testing.T) {
 	Eventually(sender.SentEnvelopes).Should(Receive(Equal(envelope)))
 }
 
-func TestStartRetriesUponSendError(t *testing.T) {
+func TestStartDoesNotDropMessageWhenConnectionDies(t *testing.T) {
 	RegisterTestingT(t)
 	log.SetOutput(ioutil.Discard)
 
@@ -50,7 +46,7 @@ func TestStartRetriesUponSendError(t *testing.T) {
 
 	messages <- envelope
 
-	Consistently(sender.SentEnvelopes).ShouldNot(Receive())
+	Eventually(sender.SendCallCount, "2s", "10ms").Should(BeNumerically(">", 0))
 
 	sender.SendError(nil)
 
@@ -122,8 +118,10 @@ func (s *spyEgressClient) SenderCallCount() int32 {
 }
 
 type spySender struct {
-	mu                    sync.Mutex
-	sendError             error
+	mu            sync.Mutex
+	sendCallCount int
+	sendError     error
+
 	SentEnvelopes         chan *loggregator_v2.Envelope
 	closeAndRecvCallCount int32
 
@@ -145,6 +143,9 @@ func (s *spySender) SendError(err error) {
 func (s *spySender) Send(e *loggregator_v2.Envelope) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	s.sendCallCount++
+
 	if s.sendError != nil {
 		return s.sendError
 	}
@@ -153,6 +154,13 @@ func (s *spySender) Send(e *loggregator_v2.Envelope) error {
 
 	s.SentEnvelopes <- e
 	return nil
+}
+
+func (s *spySender) SendCallCount() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.sendCallCount
 }
 
 func (s *spySender) CloseAndRecv() (*loggregator_v2.IngressResponse, error) {
