@@ -30,7 +30,7 @@ properties:
     default: "bosh-system-metrics-forwarder"
   metrics_forwarder.health_port:
     description: "The port used to obtain health metrics on localhost"
-    default: 19111
+    default: 0
 
   uaa_client.identity:
     description: "The UAA client identity which has access to bosh system metrics"

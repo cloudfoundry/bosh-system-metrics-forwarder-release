@@ -13,6 +13,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"net"
+
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/auth"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/definitions"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/egress"
@@ -41,7 +43,7 @@ func main() {
 
 	subscriptionID := flag.String("subscription-id", "bosh-system-metrics-forwarder", "The subscription id to use for the metrics server")
 
-	healthPort := flag.Int("health-port", 19111, "The port for the localhost health endpoint")
+	healthPort := flag.Int("health-port", 0, "The port for the localhost health endpoint")
 	flag.Parse()
 
 	validateCredentials(*clientIdentity, *clientSecret)
@@ -69,11 +71,16 @@ func main() {
 	egressStop := e.Start()
 
 	go func() {
-		fmt.Printf("starting health endpoint on http://localhost:%d/health\n", *healthPort)
+		lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", *healthPort))
+		if err != nil {
+			log.Printf("unable to start health endpoint: %s", err)
+		}
 
 		mux := http.NewServeMux()
 		mux.Handle("/health", expvar.Handler())
-		http.ListenAndServe(fmt.Sprintf("localhost:%d", *healthPort), mux)
+
+		fmt.Printf("starting health endpoint on http://%s/health\n", lis.Addr().String())
+		http.Serve(lis, mux)
 	}()
 
 	defer func() {
