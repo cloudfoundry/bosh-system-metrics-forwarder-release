@@ -1,17 +1,17 @@
 package monitor
 
 import (
+	"expvar"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
-	"expvar"
 )
 
 // New creates a health metrics server
 func NewHealth(port uint32) Starter {
-	return &profiler{port}
+	return &health{port}
 }
 
 type health struct {
