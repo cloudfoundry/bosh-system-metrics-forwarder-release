@@ -3,17 +3,13 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"expvar"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-
-	"net"
 
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/auth"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/definitions"
@@ -21,6 +17,7 @@ import (
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/ingress"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/mapper"
+	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/monitor"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -44,6 +41,8 @@ func main() {
 	subscriptionID := flag.String("subscription-id", "bosh-system-metrics-forwarder", "The subscription id to use for the metrics server")
 
 	healthPort := flag.Int("health-port", 0, "The port for the localhost health endpoint")
+	pprofPort := flag.Int("pprof-port", 0, "The port for the localhost pprof endpoint")
+
 	flag.Parse()
 
 	validateCredentials(*clientIdentity, *clientSecret)
@@ -70,18 +69,8 @@ func main() {
 	ingressStop := i.Start()
 	egressStop := e.Start()
 
-	go func() {
-		lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", *healthPort))
-		if err != nil {
-			log.Printf("unable to start health endpoint: %s", err)
-		}
-
-		mux := http.NewServeMux()
-		mux.Handle("/health", expvar.Handler())
-
-		fmt.Printf("starting health endpoint on http://%s/health\n", lis.Addr().String())
-		http.Serve(lis, mux)
-	}()
+	go monitor.NewHealth(uint32(*healthPort)).Start()
+	go monitor.NewProfiler(uint32(*pprofPort)).Start()
 
 	defer func() {
 		fmt.Println("process shutting down, stop accepting messages from system metrics server...")

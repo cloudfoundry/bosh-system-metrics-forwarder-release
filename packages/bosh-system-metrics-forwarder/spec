@@ -14,6 +14,7 @@ files:
 - github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/ingress/*.go # gosub
 - github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2/*.go # gosub
 - github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/mapper/*.go # gosub
+- github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/monitor/*.go # gosub
 - golang.org/x/net/context/*.go # gosub
 - golang.org/x/net/http2/*.go # gosub
 - golang.org/x/net/http2/hpack/*.go # gosub

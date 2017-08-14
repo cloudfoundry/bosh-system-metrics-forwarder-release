@@ -31,6 +31,9 @@ properties:
   metrics_forwarder.health_port:
     description: "The port used to obtain health metrics on localhost"
     default: 0
+  metrics_forwarder.pprof_port:
+    description: "The port used to obtain pprof profiler on localhost"
+    default: 0
 
   uaa_client.identity:
     description: "The UAA client identity which has access to bosh system metrics"
