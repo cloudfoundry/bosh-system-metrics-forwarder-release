@@ -24,11 +24,11 @@ var (
 )
 
 func init() {
-	connErrCounter = expvar.NewInt("ingress.stream_conn_err")
-	receiveErrCounter = expvar.NewInt("ingress.stream_receive_err")
-	convertErrCounter = expvar.NewInt("ingress.stream_convert_err")
-	receivedCounter = expvar.NewInt("ingress.received")
-	droppedCounter = expvar.NewInt("ingress.dropped")
+	connErrCounter = expvar.NewInt("ingress.stream_conn_err")       // Tracks errors when a stream needs to be established
+	receiveErrCounter = expvar.NewInt("ingress.stream_receive_err") // Tracks errors when receiving events from metrics server
+	convertErrCounter = expvar.NewInt("ingress.stream_convert_err") // Tracks errors when converting an event to an envelope
+	receivedCounter = expvar.NewInt("ingress.received")             // Tracks total number of events received
+	droppedCounter = expvar.NewInt("ingress.dropped")               // Tracks the number of envelopes dropped if unable to queue the msg
 }
 
 type receiver interface {
@@ -115,7 +115,6 @@ func (i *Ingress) Start() func() {
 				if ok && s.Code() == codes.PermissionDenied {
 					log.Printf("authorization failure, retrieving token: %s\n", err)
 					token, err = i.auth.Token()
-
 					if err != nil {
 						log.Fatalf("unable to refresh token: %s", err)
 					}
@@ -128,7 +127,6 @@ func (i *Ingress) Start() func() {
 			}
 
 			log.Println("metrics server stream created")
-
 			err = i.processMessages(metricsStreamClient)
 			if err != nil {
 				receiveErrCounter.Add(1)
@@ -157,6 +155,7 @@ func (i *Ingress) processMessages(client definitions.Egress_BoshMetricsClient) e
 		if err != nil {
 			return err
 		}
+		receivedCounter.Add(1)
 
 		envelope, err := i.convert(event)
 		if err != nil {
@@ -166,7 +165,6 @@ func (i *Ingress) processMessages(client definitions.Egress_BoshMetricsClient) e
 
 		select {
 		case i.messages <- envelope:
-			receivedCounter.Add(1)
 		default:
 			droppedCounter.Add(1)
 		}
