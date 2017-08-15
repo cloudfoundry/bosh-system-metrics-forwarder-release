@@ -62,6 +62,7 @@ func TestStartRetriesUponReceiveError(t *testing.T) {
 
 func TestStartGetsToken(t *testing.T) {
 	RegisterTestingT(t)
+	log.SetOutput(ioutil.Discard)
 
 	receiver := newSpyReceiver()
 	client := newSpyEgressClient(receiver, nil)
@@ -81,6 +82,7 @@ func TestStartGetsToken(t *testing.T) {
 
 func TestStartRefreshesTokenUponPermissionDeniedError(t *testing.T) {
 	RegisterTestingT(t)
+	log.SetOutput(ioutil.Discard)
 
 	receiver := newSpyReceiver()
 	client := newSpyEgressClient(
@@ -91,7 +93,7 @@ func TestStartRefreshesTokenUponPermissionDeniedError(t *testing.T) {
 	messages := make(chan *loggregator_v2.Envelope, 1)
 	tokener := newSpyTokener()
 
-	i := ingress.New(client, mapper.F, messages, tokener, "sub-id")
+	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", ingress.WithReconnectWait(time.Millisecond))
 	i.Start()
 
 	Eventually(tokener.TokenCallCount).Should(BeNumerically(">", 1))

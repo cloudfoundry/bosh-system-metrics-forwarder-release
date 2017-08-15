@@ -131,7 +131,7 @@ func (i *Ingress) Start() func() {
 			if err != nil {
 				receiveErrCounter.Add(1)
 				log.Printf("error receiving from metrics server: %s\n", err)
-				time.Sleep(250 * time.Millisecond)
+				time.Sleep(i.reconnectWait)
 				continue
 			}
 		}
