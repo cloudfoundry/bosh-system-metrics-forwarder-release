@@ -47,6 +47,7 @@
         metrics_server:
           addr: "((internal_ip)):25595"
         metrics_forwarder:
+          envelope_ip_tag: "((internal_ip))"
           tls:
             ca_cert: "((system_metrics_server_ssl.ca))"
             common_name: "((internal_ip))"

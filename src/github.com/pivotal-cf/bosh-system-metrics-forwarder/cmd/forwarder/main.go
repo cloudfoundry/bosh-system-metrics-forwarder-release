@@ -40,6 +40,8 @@ func main() {
 
 	subscriptionID := flag.String("subscription-id", "bosh-system-metrics-forwarder", "The subscription id to use for the metrics server")
 
+	envelopeIpTag := flag.String("envelope-ip-tag", "", "The ip address to tag loggregator envelopes with")
+
 	healthPort := flag.Int("health-port", 0, "The port for the localhost health endpoint")
 	pprofPort := flag.Int("pprof-port", 0, "The port for the localhost pprof endpoint")
 
@@ -60,7 +62,7 @@ func main() {
 
 	// server setup (ingress)
 	serverClient, serverConnClose := setupConnToMetricsServer(*metricsServerAddr, *metricsCN, *metricsCA)
-	i := ingress.New(serverClient, mapper.Map, messages, authClient, *subscriptionID)
+	i := ingress.New(serverClient, mapper.New(*envelopeIpTag), messages, authClient, *subscriptionID)
 
 	// metron setup (egress)
 	metronClient, metronConnClose := setupConnToMetron(*metronPort, *metronCA, *metronCert, *metronKey)

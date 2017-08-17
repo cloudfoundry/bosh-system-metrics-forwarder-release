@@ -32,6 +32,7 @@ exec chpst -u vcap:vcap ./bosh-system-metrics-forwarder \
   --metron-cert="$CERT_DIR/loggregator/client.crt" \
   --metron-key="$CERT_DIR/loggregator/client.key" \
   --subscription-id="<%= p('metrics_forwarder.subscription_id') %>" \
+  --envelope-ip-tag="<%= p('metrics_forwarder.envelope_ip_tag') %>" \
   --health-port="<%= p('metrics_forwarder.health_port') %>" \
   --pprof-port="<%= p('metrics_forwarder.pprof_port') %>" \
   &>> ${LOG_DIR}/bosh-system-metrics-forwarder.log

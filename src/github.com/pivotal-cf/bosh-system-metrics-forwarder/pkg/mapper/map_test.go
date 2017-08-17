@@ -12,7 +12,7 @@ import (
 func TestMapHeartbeat(t *testing.T) {
 	RegisterTestingT(t)
 
-	envelope, err := mapper.Map(heartbeatEvent)
+	envelope, err := mapper.New("1.2.3.4")(heartbeatEvent)
 	Expect(err).ToNot(HaveOccurred())
 
 	Expect(envelope).To(Equal(&loggregator_v2.Envelope{
@@ -32,6 +32,9 @@ func TestMapHeartbeat(t *testing.T) {
 			}},
 			"deployment": {Data: &loggregator_v2.Value_Text{
 				Text: "loggregator",
+			}},
+			"ip": {Data: &loggregator_v2.Value_Text{
+				Text: "1.2.3.4",
 			}},
 		},
 		Message: &loggregator_v2.Envelope_Gauge{
@@ -61,7 +64,7 @@ func TestMapHeartbeat(t *testing.T) {
 func TestMapIgnoresAlerts(t *testing.T) {
 	RegisterTestingT(t)
 
-	_, err := mapper.Map(alertEvent)
+	_, err := mapper.New("ignored")(alertEvent)
 	Expect(err).To(HaveOccurred())
 }
 

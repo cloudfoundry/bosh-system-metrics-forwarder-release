@@ -7,16 +7,18 @@ import (
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
 )
 
-func Map(event *definitions.Event) (*loggregator_v2.Envelope, error) {
-	switch event.Message.(type) {
-	case *definitions.Event_Heartbeat:
-		return mapHeartbeat(event), nil
-	default:
-		return nil, errors.New("metric type not supported")
+func New(ipTag string) func (event *definitions.Event) (*loggregator_v2.Envelope, error) {
+	return func (event *definitions.Event) (*loggregator_v2.Envelope, error) {
+		switch event.Message.(type) {
+		case *definitions.Event_Heartbeat:
+			return mapHeartbeat(event, ipTag), nil
+		default:
+			return nil, errors.New("metric type not supported")
+		}
 	}
 }
 
-func mapHeartbeat(event *definitions.Event) *loggregator_v2.Envelope {
+func mapHeartbeat(event *definitions.Event, ipTag string) *loggregator_v2.Envelope {
 
 	gaugeMetrics := make(map[string]*loggregator_v2.GaugeValue, len(event.GetHeartbeat().GetMetrics()))
 
@@ -45,6 +47,9 @@ func mapHeartbeat(event *definitions.Event) *loggregator_v2.Envelope {
 			}},
 			"deployment": {Data: &loggregator_v2.Value_Text{
 				Text: event.GetDeployment(),
+			}},
+			"ip": {Data: &loggregator_v2.Value_Text{
+				Text: ipTag,
 			}},
 		},
 		Message: &loggregator_v2.Envelope_Gauge{
