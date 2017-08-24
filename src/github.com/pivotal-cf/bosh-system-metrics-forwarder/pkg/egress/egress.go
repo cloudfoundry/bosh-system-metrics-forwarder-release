@@ -37,6 +37,7 @@ func init() {
 	sentCounter = expvar.NewInt("egress.sent")
 }
 
+// New returns a new Egress.
 func New(c client, m <-chan *loggregator_v2.Envelope) *Egress {
 	return &Egress{
 		client:   c,
@@ -45,6 +46,11 @@ func New(c client, m <-chan *loggregator_v2.Envelope) *Egress {
 	}
 }
 
+// Start spins up a go routine that sends envelopes to Loggregator.
+// It returns a shutdown function which blocks until all messages
+// are drained.
+// If a message fails to send it will reconnect to Loggregator and
+// retry sending that message.
 func (e *Egress) Start() func() {
 	log.Println("Starting forwarder...")
 

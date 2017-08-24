@@ -65,6 +65,7 @@ func WithReconnectWait(d time.Duration) IngressOpt {
 	}
 }
 
+// New returns a new Ingress.
 func New(
 	s definitions.EgressClient,
 	m mapper,
@@ -90,6 +91,10 @@ func New(
 	return i
 }
 
+// Start spins a new go routine that establishes a connection to
+// the Bosh System metrics Server.
+// It returns a shutdown function that blocks until the grpc stream client
+// has been successfully closed.
 func (i *Ingress) Start() func() {
 	log.Println("Starting ingestor...")
 	done := make(chan struct{})

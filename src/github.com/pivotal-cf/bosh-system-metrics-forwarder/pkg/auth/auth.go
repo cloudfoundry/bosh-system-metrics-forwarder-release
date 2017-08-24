@@ -22,6 +22,7 @@ type Auth struct {
 	clientSecret string
 }
 
+// New returns a new Auth.
 func New(a addresser, clientID string, clientSecret string, tlsConfig *tls.Config) *Auth {
 	return &Auth{
 		httpClient: &http.Client{
@@ -40,6 +41,8 @@ type authResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
+// Token returns the token provided by the auth endpoint.
+// It returns an error if the  request fails or the response cannot be decoded.
 func (a *Auth) Token() (string, error) {
 	addr, err := a.addrProvider.Addr()
 	if err != nil {

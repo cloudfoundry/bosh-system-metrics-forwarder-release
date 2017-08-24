@@ -7,8 +7,12 @@ import (
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
 )
 
-func New(ipTag string) func (event *definitions.Event) (*loggregator_v2.Envelope, error) {
-	return func (event *definitions.Event) (*loggregator_v2.Envelope, error) {
+// New returns a function that converts a bosh Event to an envelope.
+// It only process heartbeat events.
+// It returns an error if it receives a message type isn't a heartbeat type.
+// It takes an IP tag which overrides the `ip` tag on the envelope.
+func New(ipTag string) func(event *definitions.Event) (*loggregator_v2.Envelope, error) {
+	return func(event *definitions.Event) (*loggregator_v2.Envelope, error) {
 		switch event.Message.(type) {
 		case *definitions.Event_Heartbeat:
 			return mapHeartbeat(event, ipTag), nil
