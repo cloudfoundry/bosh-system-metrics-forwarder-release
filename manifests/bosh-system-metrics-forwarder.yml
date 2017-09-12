@@ -1,0 +1,77 @@
+name: bosh-system-metrics-forwarder
+
+stemcells:
+- alias: default
+  os: ubuntu-trusty
+  version: latest
+
+releases:
+- name: bosh-system-metrics-forwarder
+  version: latest
+- name: consul
+  version: latest
+- name: loggregator
+  version: latest
+
+instance_groups:
+- name: bosh-system-metrics-forwarder
+  azs:
+  - z1
+  instances: 2
+  persistent_disk_type: default
+  vm_type: default
+  stemcell: default
+  networks:
+  - name: default
+  jobs:
+  - name: consul_agent
+    release: consul
+    consumes:
+      consul: nil
+      consul_common: {from: consul_common_link, deployment: loggregator}
+      consul_server: nil
+      consul_client: {from: consul_client_link, deployment: loggregator}
+  - name: metron_agent
+    release: loggregator
+    properties: &metron_agent_properties
+      doppler:
+        addr: doppler.service.cf.internal
+      metron_agent:
+        disable_udp: false
+        deployment: loggregator
+      loggregator:
+        tls:
+          ca_cert: "((loggregator_metron.ca))"
+          metron:
+            cert: "((loggregator_metron.certificate))"
+            key: "((loggregator_metron.private_key))"
+  - name: bosh-system-metrics-forwarder
+    release: bosh-system-metrics-forwarder
+    properties:
+      bosh:
+        url: "https://((internal_ip)):25555"
+        root_ca_cert: "((director_ssl.ca))"
+      metrics_server:
+        addr: "((internal_ip)):25595"
+      metrics_forwarder:
+        envelope_ip_tag: "((internal_ip))"
+        tls:
+          ca_cert: "((system_metrics_server_ssl.ca))"
+          common_name: "((internal_ip))"
+      uaa_client:
+        identity: "system_metrics_client"
+        password: "((system_metrics_uaa_client_secret))"
+      loggregator:
+        ca_cert: "((loggregator_metron.ca))"
+        cert: "((loggregator_metron.certificate))"
+        key: "((loggregator_metron.private_key))"
+  update:
+    max_in_flight: 1
+    serial: true
+
+update:
+  canaries: 10
+  max_in_flight: 10
+  canary_watch_time: 30000-60000
+  update_watch_time: 5000-60000
+  serial: true
