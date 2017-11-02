@@ -116,13 +116,10 @@ func (i *Ingress) Start() func() {
 
 			metricsStreamClient, err := i.establishStream(token)
 			if err != nil {
-				s, ok := status.FromError(err)
-				if ok && s.Code() == codes.PermissionDenied {
-					log.Printf("authorization failure, retrieving token: %s\n", err)
-					token, err = i.auth.Token()
-					if err != nil {
-						log.Fatalf("unable to refresh token: %s", err)
-					}
+				newToken, tokenWasFetched := i.checkPermissionDeniedError(err)
+
+				if tokenWasFetched {
+					token = newToken
 				}
 
 				connErrCounter.Add(1)
@@ -134,6 +131,12 @@ func (i *Ingress) Start() func() {
 			log.Println("metrics server stream created")
 			err = i.processMessages(metricsStreamClient)
 			if err != nil {
+				newToken, tokenWasFetched := i.checkPermissionDeniedError(err)
+
+				if tokenWasFetched {
+					token = newToken
+				}
+
 				receiveErrCounter.Add(1)
 				log.Printf("error receiving from metrics server: %s\n", err)
 				time.Sleep(i.reconnectWait)
@@ -152,6 +155,20 @@ func (i *Ingress) Start() func() {
 		i.metricsServerCancel()
 		<-done
 	}
+}
+func (i *Ingress) checkPermissionDeniedError(sourceError error) (newToken string, tokenWasFetched bool) {
+	s, ok := status.FromError(sourceError)
+	if ok && s.Code() == codes.PermissionDenied {
+		log.Printf("authorization failure, retrieving token: %s\n", sourceError)
+		token, err := i.auth.Token()
+		if err != nil {
+			log.Fatalf("unable to refresh token: %s", err)
+		}
+
+		return token, true
+	}
+
+	return "", false
 }
 
 func (i *Ingress) processMessages(client definitions.Egress_BoshMetricsClient) error {
