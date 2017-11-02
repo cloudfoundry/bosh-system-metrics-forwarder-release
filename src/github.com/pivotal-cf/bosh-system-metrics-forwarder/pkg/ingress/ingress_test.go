@@ -80,7 +80,7 @@ func TestStartGetsToken(t *testing.T) {
 	Expect(md["authorization"][0]).To(Equal("token0"))
 }
 
-func TestStartRefreshesTokenUponPermissionDeniedError(t *testing.T) {
+func TestEstablishStreamRefreshesTokenUponPermissionDeniedError(t *testing.T) {
 	RegisterTestingT(t)
 	log.SetOutput(ioutil.Discard)
 
@@ -89,6 +89,28 @@ func TestStartRefreshesTokenUponPermissionDeniedError(t *testing.T) {
 		receiver,
 		status.Error(codes.PermissionDenied, "some-error"),
 	)
+	mapper := newSpyMapper(envelope, nil)
+	messages := make(chan *loggregator_v2.Envelope, 1)
+	tokener := newSpyTokener()
+
+	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", ingress.WithReconnectWait(time.Millisecond))
+	i.Start()
+
+	Eventually(tokener.TokenCallCount).Should(BeNumerically(">", 1))
+	Eventually(client.BoshMetricsCallCount, "2s").Should(BeNumerically(">", 1))
+	md, ok := metadata.FromOutgoingContext(client.LatestContext())
+	Expect(ok).To(BeTrue())
+	// token0 is the first token generated. We want a different token.
+	Expect(md["authorization"][0]).ToNot(Equal("token0"))
+}
+
+func TestProcessMessagesRefreshesTokenUponPermissionDeniedError(t *testing.T) {
+	RegisterTestingT(t)
+	log.SetOutput(ioutil.Discard)
+
+	receiver := newSpyReceiver()
+	receiver.RecvError(status.Error(codes.PermissionDenied, "some-error"))
+	client := newSpyEgressClient(receiver, nil)
 	mapper := newSpyMapper(envelope, nil)
 	messages := make(chan *loggregator_v2.Envelope, 1)
 	tokener := newSpyTokener()
