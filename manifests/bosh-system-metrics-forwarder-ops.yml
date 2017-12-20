@@ -27,10 +27,10 @@
           deployment: loggregator
         loggregator:
           tls:
-            ca_cert: "((loggregator_metron.ca))"
+            ca_cert: "((loggregator_agent.ca))"
             metron:
-              cert: "((loggregator_metron.certificate))"
-              key: "((loggregator_metron.private_key))"
+              cert: "((loggregator_agent.certificate))"
+              key: "((loggregator_agent.private_key))"
     - name: bosh-system-metrics-forwarder
       release: bosh-system-metrics-forwarder
       properties:
@@ -48,9 +48,9 @@
           identity: "system_metrics_client"
           password: "((system_metrics_uaa_client_secret))"
         loggregator:
-          ca_cert: "((loggregator_metron.ca))"
-          cert: "((loggregator_metron.certificate))"
-          key: "((loggregator_metron.private_key))"
+          ca_cert: "((loggregator_agent.ca))"
+          cert: "((loggregator_agent.certificate))"
+          key: "((loggregator_agent.private_key))"
     update:
       serial: true
       max_in_flight: 1
