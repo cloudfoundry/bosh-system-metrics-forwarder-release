@@ -8,8 +8,6 @@ stemcells:
 releases:
 - name: bosh-system-metrics-forwarder
   version: latest
-- name: consul
-  version: latest
 - name: loggregator
   version: latest
 
@@ -24,13 +22,6 @@ instance_groups:
   networks:
   - name: default
   jobs:
-  - name: consul_agent
-    release: consul
-    consumes:
-      consul: nil
-      consul_common: {from: consul_common_link, deployment: loggregator}
-      consul_server: nil
-      consul_client: {from: consul_client_link, deployment: loggregator}
   - name: metron_agent
     release: loggregator
     properties: &metron_agent_properties
