@@ -21,8 +21,9 @@
       release: loggregator
       properties:
         doppler:
-          addr: doppler.service.cf.internal
+          addr:
         metron_agent:
+          bosh_dns: true
           disable_udp: false
           deployment: loggregator
         loggregator:
