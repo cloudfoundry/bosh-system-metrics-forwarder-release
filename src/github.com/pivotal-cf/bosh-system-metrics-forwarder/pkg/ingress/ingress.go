@@ -51,6 +51,7 @@ type Ingress struct {
 	messages       chan *loggregator_v2.Envelope
 	client         definitions.EgressClient
 	reconnectWait  time.Duration
+	streamTimeout  time.Duration
 	subscriptionID string
 
 	mu                  sync.Mutex
@@ -62,6 +63,12 @@ type IngressOpt func(*Ingress)
 func WithReconnectWait(d time.Duration) IngressOpt {
 	return func(i *Ingress) {
 		i.reconnectWait = d
+	}
+}
+
+func WithStreamTimeout(d time.Duration) IngressOpt {
+	return func(i *Ingress) {
+		i.streamTimeout = d
 	}
 }
 
@@ -82,6 +89,7 @@ func New(
 		subscriptionID:      sID,
 		metricsServerCancel: func() {},
 		reconnectWait:       time.Second,
+		streamTimeout:       45 * time.Second,
 	}
 
 	for _, o := range opts {
@@ -140,7 +148,6 @@ func (i *Ingress) Start() func() {
 				receiveErrCounter.Add(1)
 				log.Printf("error receiving from metrics server: %s\n", err)
 				time.Sleep(i.reconnectWait)
-				continue
 			}
 		}
 	}()
@@ -156,6 +163,7 @@ func (i *Ingress) Start() func() {
 		<-done
 	}
 }
+
 func (i *Ingress) checkPermissionDeniedError(sourceError error) (newToken string, tokenWasFetched bool) {
 	s, ok := status.FromError(sourceError)
 	if ok && s.Code() == codes.PermissionDenied {
@@ -196,7 +204,7 @@ func (i *Ingress) processMessages(client definitions.Egress_BoshMetricsClient) e
 func (i *Ingress) establishStream(token string) (definitions.Egress_BoshMetricsClient, error) {
 	md := metadata.Pairs("authorization", token)
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
-	metricsServerCtx, metricsServerCancel := context.WithCancel(ctx)
+	metricsServerCtx, metricsServerCancel := context.WithTimeout(ctx, i.streamTimeout)
 
 	i.mu.Lock()
 	defer i.mu.Unlock()

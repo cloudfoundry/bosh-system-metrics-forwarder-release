@@ -20,6 +20,8 @@ import (
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/monitor"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
+	"time"
 )
 
 func main() {
@@ -125,6 +127,11 @@ func setupConnToMetricsServer(addr, cn, ca string) (definitions.EgressClient, fu
 	serverConn, err := grpc.Dial(
 		addr,
 		grpc.WithTransportCredentials(credentials.NewTLS(serverTLSConf)),
+		grpc.WithKeepaliveParams(keepalive.ClientParameters{
+			Time:                10 * time.Second,
+			Timeout:             20 * time.Second,
+			PermitWithoutStream: true,
+		}),
 	)
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
