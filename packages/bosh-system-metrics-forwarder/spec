@@ -2,7 +2,7 @@
 name: bosh-system-metrics-forwarder
 
 dependencies:
-- golang
+- golang-1.10-linux
 
 files:
 - github.com/golang/protobuf/proto/*.go # gosub
