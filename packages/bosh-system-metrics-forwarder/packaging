@@ -2,10 +2,4 @@ set -ex
 
 source /var/vcap/packages/golang-1.10-linux/bosh/compile.env
 
-export GOROOT=$(readlink -nf /var/vcap/packages/golang)
-export PATH=$GOROOT/bin:$PATH
-export GOPATH=$PWD
-
-ln -s $GOPATH $GOPATH/src
-
 go build -o ${BOSH_INSTALL_TARGET}/bosh-system-metrics-forwarder github.com/pivotal-cf/bosh-system-metrics-forwarder/cmd/forwarder
