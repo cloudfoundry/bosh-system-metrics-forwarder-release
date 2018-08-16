@@ -3,5 +3,9 @@ set -ex
 source /var/vcap/packages/golang-1.10-linux/bosh/compile.env
 
 mkdir src
-mv github.com src/
+
+shopt -s extglob
+    mv !(src) src/
+shopt -u extglob
+
 go build -o ${BOSH_INSTALL_TARGET}/bosh-system-metrics-forwarder github.com/pivotal-cf/bosh-system-metrics-forwarder/cmd/forwarder
