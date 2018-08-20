@@ -11,11 +11,12 @@ import (
 
 var (
 	loggregatorAddr = os.Getenv("LOGGREGATOR_ADDR")
+	authToken      = os.Getenv("CF_ACCESS_TOKEN")
 )
 
 func main() {
 	cnsmr := consumer.New(loggregatorAddr, &tls.Config{InsecureSkipVerify: true}, nil)
-	msgs, errs := cnsmr.FilteredFirehose("bosh-system-metrics-smoke-tests", "", consumer.Metrics)
+	msgs, errs := cnsmr.FilteredFirehose("bosh-system-metrics-smoke-tests", authToken, consumer.Metrics)
 
 	go func() {
 		for err := range errs {
