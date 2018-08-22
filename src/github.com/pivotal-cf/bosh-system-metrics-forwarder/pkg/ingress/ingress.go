@@ -1,7 +1,6 @@
 package ingress
 
 import (
-	"expvar"
 	"log"
 	"time"
 
@@ -9,6 +8,7 @@ import (
 
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/definitions"
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
+	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -16,19 +16,39 @@ import (
 )
 
 var (
-	connErrCounter    *expvar.Int
-	receiveErrCounter *expvar.Int
-	convertErrCounter *expvar.Int
-	receivedCounter   *expvar.Int
-	droppedCounter    *expvar.Int
+	connErrCounter    = prometheus.NewCounter(prometheus.CounterOpts{
+		Subsystem:   "ingress",
+		Name:        "stream_conn_err",
+		Help:        "Tracks errors when a stream needs to be established",
+	})
+	receiveErrCounter = prometheus.NewCounter(prometheus.CounterOpts{
+		Subsystem:   "ingress",
+		Name:        "stream_receive_err",
+		Help:        "Tracks errors when receiving events from metrics server",
+	})
+	convertErrCounter = prometheus.NewCounter(prometheus.CounterOpts{
+		Subsystem:   "ingress",
+		Name:        "stream_convert_err",
+		Help:        "Tracks errors when converting an event to an envelope",
+	})
+	receivedCounter   = prometheus.NewCounter(prometheus.CounterOpts{
+		Subsystem:   "ingress",
+		Name:        "received",
+		Help:        "Tracks total number of events received",
+	})
+	droppedCounter    = prometheus.NewCounter(prometheus.CounterOpts{
+		Subsystem:   "ingress",
+		Name:        "dropped",
+		Help:        "Tracks the number of envelopes dropped if unable to queue the msg",
+	})
 )
 
 func init() {
-	connErrCounter = expvar.NewInt("ingress.stream_conn_err")       // Tracks errors when a stream needs to be established
-	receiveErrCounter = expvar.NewInt("ingress.stream_receive_err") // Tracks errors when receiving events from metrics server
-	convertErrCounter = expvar.NewInt("ingress.stream_convert_err") // Tracks errors when converting an event to an envelope
-	receivedCounter = expvar.NewInt("ingress.received")             // Tracks total number of events received
-	droppedCounter = expvar.NewInt("ingress.dropped")               // Tracks the number of envelopes dropped if unable to queue the msg
+	prometheus.MustRegister(connErrCounter)
+	prometheus.MustRegister(receiveErrCounter)
+	prometheus.MustRegister(convertErrCounter)
+	prometheus.MustRegister(receivedCounter)
+	prometheus.MustRegister(droppedCounter)
 }
 
 type receiver interface {
@@ -130,7 +150,7 @@ func (i *Ingress) Start() func() {
 					token = newToken
 				}
 
-				connErrCounter.Add(1)
+				connErrCounter.Inc()
 				log.Printf("error creating stream connection to metrics server: %s\n", err)
 				time.Sleep(i.reconnectWait)
 				continue
@@ -145,7 +165,7 @@ func (i *Ingress) Start() func() {
 					token = newToken
 				}
 
-				receiveErrCounter.Add(1)
+				receiveErrCounter.Inc()
 				log.Printf("error receiving from metrics server: %s\n", err)
 				time.Sleep(i.reconnectWait)
 			}
@@ -185,18 +205,18 @@ func (i *Ingress) processMessages(client definitions.Egress_BoshMetricsClient) e
 		if err != nil {
 			return err
 		}
-		receivedCounter.Add(1)
+		receivedCounter.Inc()
 
 		envelope, err := i.convert(event)
 		if err != nil {
-			convertErrCounter.Add(1)
+			convertErrCounter.Inc()
 			continue
 		}
 
 		select {
 		case i.messages <- envelope:
 		default:
-			droppedCounter.Add(1)
+			droppedCounter.Inc()
 		}
 	}
 }

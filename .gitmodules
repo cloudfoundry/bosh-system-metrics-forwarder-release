@@ -1,5 +1,5 @@
 [submodule "src/github.com/gogo/protobuf"]
-	path = src/smoke-tests/vendor/github.com/gogo/protobuf
+	path = src/github.com/gogo/protobuf
 	url = https://github.com/gogo/protobuf
 [submodule "src/github.com/cloudfoundry/noaa"]
 	path = src/smoke-tests/vendor/github.com/cloudfoundry/noaa
@@ -34,3 +34,21 @@
 [submodule "src/golang.org/x/sys"]
 	path = src/golang.org/x/sys
 	url = https://go.googlesource.com/sys
+[submodule "src/github.com/beorn7/perks"]
+	path = src/github.com/beorn7/perks
+	url = https://github.com/beorn7/perks
+[submodule "src/github.com/matttproud/golang_protobuf_extensions"]
+	path = src/github.com/matttproud/golang_protobuf_extensions
+	url = https://github.com/matttproud/golang_protobuf_extensions
+[submodule "src/github.com/prometheus/client_golang"]
+	path = src/github.com/prometheus/client_golang
+	url = https://github.com/prometheus/client_golang
+[submodule "src/github.com/prometheus/client_model"]
+	path = src/github.com/prometheus/client_model
+	url = https://github.com/prometheus/client_model
+[submodule "src/github.com/prometheus/common"]
+	path = src/github.com/prometheus/common
+	url = https://github.com/prometheus/common
+[submodule "src/github.com/prometheus/procfs"]
+	path = src/github.com/prometheus/procfs
+	url = https://github.com/prometheus/procfs

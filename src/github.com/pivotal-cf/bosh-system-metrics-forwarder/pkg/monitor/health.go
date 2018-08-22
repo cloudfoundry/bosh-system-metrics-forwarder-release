@@ -1,12 +1,11 @@
 package monitor
 
 import (
-	"expvar"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
-	_ "net/http/pprof"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // New creates a health metrics server
@@ -26,9 +25,9 @@ func (s *health) Start() {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/health", expvar.Handler())
+	mux.Handle("/metrics", promhttp.Handler())
 
-	log.Printf("starting monitor endpoint on http://%s/health\n", lis.Addr().String())
+	log.Printf("starting monitor endpoint on http://%s/metrics\n", lis.Addr().String())
 	err = http.Serve(lis, mux)
 	log.Printf("error starting the monitor server: %s", err)
 }
