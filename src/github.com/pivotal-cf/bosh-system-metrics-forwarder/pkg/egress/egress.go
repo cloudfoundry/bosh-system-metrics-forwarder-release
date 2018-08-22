@@ -1,11 +1,11 @@
 package egress
 
 import (
-	"expvar"
 	"log"
 	"time"
 
 	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
+	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -26,15 +26,27 @@ type Egress struct {
 }
 
 var (
-	sendErrCounter *expvar.Int
-	droppedCounter *expvar.Int
-	sentCounter    *expvar.Int
+	sendErrCounter = prometheus.NewCounter(prometheus.CounterOpts{
+		Subsystem: "egress",
+		Name:      "send_err",
+		Help:      "Errors connecting and sending to log agent",
+	})
+	droppedCounter = prometheus.NewCounter(prometheus.CounterOpts{
+		Subsystem: "egress",
+		Name:      "dropped",
+		Help:      "Failed retries sending metrics",
+	})
+	sentCounter = prometheus.NewCounter(prometheus.CounterOpts{
+		Subsystem: "egress",
+		Name:      "sent",
+		Help:      "Successful sends",
+	})
 )
 
 func init() {
-	sendErrCounter = expvar.NewInt("egress.send_err")
-	droppedCounter = expvar.NewInt("egress.dropped")
-	sentCounter = expvar.NewInt("egress.sent")
+	prometheus.MustRegister(sendErrCounter)
+	prometheus.MustRegister(droppedCounter)
+	prometheus.MustRegister(sentCounter)
 }
 
 // New returns a new Egress.
@@ -78,7 +90,7 @@ func (e *Egress) Start() func() {
 			snd, err = e.client.Sender(context.Background())
 			if err != nil {
 				log.Printf("error creating stream connection to metron: %s", err)
-				sendErrCounter.Add(1)
+				sendErrCounter.Inc()
 				time.Sleep(100 * time.Millisecond)
 				continue
 			}
@@ -88,7 +100,7 @@ func (e *Egress) Start() func() {
 			err = e.processMessages(snd)
 			if err != nil {
 				log.Printf("error sending to log agent: %s\n", err)
-				sendErrCounter.Add(1)
+				sendErrCounter.Inc()
 				time.Sleep(100 * time.Millisecond)
 			}
 
@@ -114,7 +126,7 @@ func (e *Egress) processMessages(snd loggregator_v2.Ingress_SenderClient) error 
 			return err
 		}
 
-		sentCounter.Add(1)
+		sentCounter.Inc()
 	}
 
 	return nil
@@ -124,7 +136,7 @@ func (e *Egress) retryLater(envelope *loggregator_v2.Envelope) {
 	select {
 	case e.retry <- envelope:
 	default:
-		droppedCounter.Add(1)
+		droppedCounter.Inc()
 	}
 }
 
@@ -134,11 +146,11 @@ func (e *Egress) processRetries(snd sender) error {
 		case envelope := <-e.retry:
 			err := snd.Send(envelope)
 			if err != nil {
-				droppedCounter.Add(1)
+				droppedCounter.Inc()
 				return err
 			}
 
-			sentCounter.Add(1)
+			sentCounter.Inc()
 		default:
 			return nil
 		}
