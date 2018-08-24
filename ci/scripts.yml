@@ -106,8 +106,6 @@ create-acceptance-bosh-lite-with-metrics-server: |
   echo "datadog_key: ${DATADOG_API_KEY}" >> ${ENV_DIR}/creds.yml
   echo "datadog_app_key: ${DATADOG_APP_KEY}" >> ${ENV_DIR}/creds.yml
 
-  echo $GCP_SERVICE_ACCOUNT_KEY >>
-
   bosh create-env bosh-deployment/bosh.yml \
     --state ${ENV_DIR}/state.json \
     --vars-store ${ENV_DIR}/creds.yml \
@@ -253,11 +251,24 @@ deploy-loggregator-with-metrics-forwarder: |
   echo "Deleting loggregator deployment"
   bosh -d loggregator delete-deployment --force -n
 
+  cat << EOF > loggregator-vm-default.yml
+  - type: replace
+    path: /instance_groups/name=log-cache/vm_type
+    value: default
+  - type: replace
+    path: /instance_groups/name=doppler/vm_type
+    value: default
+  - type: replace
+    path: /instance_groups/name=log-api/vm_type
+    value: default
+  EOF
+
   loggregator_dir="$PWD/loggregator-repo"
   bosh -n -d loggregator deploy \
     --vars-store "${ENV_DIR}/creds.yml" \
     -o "${DEPLOY_DIR}/loggregator-ops.yml" \
     -o "$forwarder_release_dir/manifests/bosh-system-metrics-forwarder-ops.yml" \
+    -o "loggregator-vm-default.yml" \
     "$loggregator_dir/manifests/loggregator.yml"
 
   rsync -ac deployments-metrics/ updated-deployments-metrics

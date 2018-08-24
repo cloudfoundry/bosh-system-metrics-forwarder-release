@@ -1,5 +1,5 @@
 ---
-name: indicator-registry-agent
+name: indicator-registration-agent
 
 templates:
   ctl.erb: bin/ctl

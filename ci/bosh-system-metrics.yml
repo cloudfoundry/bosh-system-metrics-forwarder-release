@@ -3,14 +3,14 @@ resources:
 - name: bosh-system-metrics-server-release
   type: git
   source:
-    uri: git@github.com:pivotal-cf/bosh-system-metrics-server-release
+    uri: git@github.com:cloudfoundry/bosh-system-metrics-server-release
     branch: master
     private_key: {{metrix-git-key}}
 
 - name: bosh-system-metrics-forwarder-release
   type: git
   source:
-    uri: git@github.com:pivotal-cf/bosh-system-metrics-forwarder-release
+    uri: git@github.com:cloudfoundry/bosh-system-metrics-forwarder-release
     branch: master
     private_key: {{metrix-git-key}}
 
@@ -87,7 +87,7 @@ resources:
 - name: bosh-system-metrics-forwarder-final-release
   type: git
   source:
-    uri: git@github.com:pivotal-cf/bosh-system-metrics-forwarder-release
+    uri: git@github.com:cloudfoundry/bosh-system-metrics-forwarder-release
     branch: master
     private_key: {{metrix-git-key}}
     ignore_paths:
@@ -97,7 +97,7 @@ resources:
 - name: bosh-system-metrics-forwarder-release-github-release-drafts
   type: github-release
   source:
-    user: pivotal-cf
+    user: cloudfoundry
     repository: bosh-system-metrics-forwarder-release
     access_token: {{concourse-metrix-github-access-token}}
     drafts: true
@@ -114,7 +114,7 @@ resources:
 - name: bosh-system-metrics-server-final-release
   type: git
   source:
-    uri: git@github.com:pivotal-cf/bosh-system-metrics-server-release
+    uri: git@github.com:cloudfoundry/bosh-system-metrics-server-release
     branch: master
     private_key: {{metrix-git-key}}
     ignore_paths:
@@ -124,7 +124,7 @@ resources:
 - name: bosh-system-metrics-server-release-github-release-drafts
   type: github-release
   source:
-    user: pivotal-cf
+    user: cloudfoundry
     repository: bosh-system-metrics-server-release
     access_token: {{concourse-metrix-github-access-token}}
     drafts: true
@@ -226,6 +226,9 @@ jobs:
     - get: deployments-metrics
       resource: deployments-metrics-with-changes
       passed: [cleanup-bosh-lite]
+    - get: loggregator-release-elect
+      trigger: true
+      passed: [cleanup-bosh-lite]
   - task: create-bosh-lite-with-metrics-server
     config:
       platform: linux
@@ -289,6 +292,8 @@ jobs:
   - aggregate:
     - get: loggregator-repo
       resource: loggregator-release-elect
+      trigger: true
+      passed: [create-bosh-lite-with-metrics-server]
     - get: bosh-system-metrics-server-release
       passed:
       - create-bosh-lite-with-metrics-server
@@ -728,6 +733,8 @@ jobs:
       trigger: true
     - get: denver-locks
     - get: deployments-metrics
+    - get: loggregator-release-elect
+      trigger: true
   - task: delete-vms
     config:
       platform: linux
@@ -744,7 +751,6 @@ jobs:
         S3_ACCESS_KEY: {{aws-access-key-id}}
         S3_SECRET_KEY: {{aws-secret-access-key}}
         OUTPUT: final-forwarder-release
-        GCP_SERVICE_ACCOUNT_KEY: {{gcp-service-account-key}}
       run:
         path: bash
         args:

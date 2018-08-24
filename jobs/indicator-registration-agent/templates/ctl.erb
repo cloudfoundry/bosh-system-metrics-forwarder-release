@@ -4,7 +4,6 @@ RUN_DIR=/var/vcap/sys/run/indicator-registration-agent
 LOG_DIR=/var/vcap/sys/log/indicator-registration-agent
 PIDFILE=$RUN_DIR/indicator-registration-agent.pid
 JOB_DIR=/var/vcap/jobs/indicator-registration-agent
-INDICATOR_DOCUMENT=$JOB_DIR/config/indicators.yml
 
 PACKAGE_DIR=/var/vcap/packages/indicator-registration-agent
 
@@ -20,9 +19,10 @@ ulimit -n 8192
 
 echo $$ > $PIDFILE
 exec chpst -u vcap:vcap ./registration_agent \
-  --indicators-path="$INDICATOR_DOCUMENT" \
+  --indicators-path="$PACKAGE_DIR/config/indicators.yml" \
   --registry="<%= p('indicators.registry_uri') %>" \
   --deployment="<%= p('deployment_name') %>" \
+  --product="bosh-system-metrics-forwarder" \
   --interval="<%= p('indicators.interval') %>" \
   &>> ${LOG_DIR}/indicator-registration-agent.log
 
