@@ -55,3 +55,6 @@
 [submodule "src/smoke-tests/vendor/github.com/gogo/protobuf"]
 	path = src/smoke-tests/vendor/github.com/gogo/protobuf
 	url = https://github.com/gogo/protobuf
+[submodule "src/code.cloudfoundry.org/cf-indicators"]
+	path = src/code.cloudfoundry.org/cf-indicators
+	url = https://github.com/cloudfoundry-incubator/cf-indicators

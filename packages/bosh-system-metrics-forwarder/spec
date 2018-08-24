@@ -5,11 +5,14 @@ dependencies:
 - golang-1.10-linux
 
 files:
+- github.com/beorn7/perks/quantile/* # gosub
+- github.com/gogo/protobuf/proto/* # gosub
 - github.com/golang/protobuf/proto/* # gosub
 - github.com/golang/protobuf/ptypes/* # gosub
 - github.com/golang/protobuf/ptypes/any/* # gosub
 - github.com/golang/protobuf/ptypes/duration/* # gosub
 - github.com/golang/protobuf/ptypes/timestamp/* # gosub
+- github.com/matttproud/golang_protobuf_extensions/pbutil/* # gosub
 - github.com/pivotal-cf/bosh-system-metrics-forwarder/cmd/forwarder/* # gosub
 - github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/auth/* # gosub
 - github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/definitions/* # gosub
@@ -18,6 +21,16 @@ files:
 - github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2/* # gosub
 - github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/mapper/* # gosub
 - github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/monitor/* # gosub
+- github.com/prometheus/client_golang/prometheus/* # gosub
+- github.com/prometheus/client_golang/prometheus/promhttp/* # gosub
+- github.com/prometheus/client_model/go/* # gosub
+- github.com/prometheus/common/expfmt/* # gosub
+- github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg/* # gosub
+- github.com/prometheus/common/model/* # gosub
+- github.com/prometheus/procfs/* # gosub
+- github.com/prometheus/procfs/internal/util/* # gosub
+- github.com/prometheus/procfs/nfs/* # gosub
+- github.com/prometheus/procfs/xfs/* # gosub
 - golang.org/x/net/context/* # gosub
 - golang.org/x/net/http2/* # gosub
 - golang.org/x/net/http2/hpack/* # gosub
