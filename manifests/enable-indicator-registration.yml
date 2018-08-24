@@ -1,0 +1,10 @@
+- type: replace
+  path: /instance_groups/name=bosh-system-metrics-forwarder/jobs/-
+  value:
+  - name: indicator-registration-agent
+    release: bosh-system-metrics-forwarder
+    properties:
+      deployment_name: "((deployment_name))"
+      indicators:
+        registry_uri: "((indicators.registry_uri))"
+        interval: "((indicators.interval))"

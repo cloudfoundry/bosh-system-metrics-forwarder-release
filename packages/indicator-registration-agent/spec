@@ -1,0 +1,12 @@
+---
+name: indicator-registration-agent
+
+dependencies:
+- golang-1.10-linux
+
+files:
+- code.cloudfoundry.org/cf-indicators/cmd/registry_agent/* # gosub
+- code.cloudfoundry.org/cf-indicators/pkg/indicator/* # gosub
+- code.cloudfoundry.org/cf-indicators/pkg/registry/* # gosub
+- gopkg.in/yaml.v2/* # gosub
+- ../indicators.yml

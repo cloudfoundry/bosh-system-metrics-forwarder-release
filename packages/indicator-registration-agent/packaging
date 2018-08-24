@@ -1,0 +1,14 @@
+set -e
+
+source /var/vcap/packages/golang-1.10-linux/bosh/compile.env
+
+mkdir src
+
+shopt -s extglob
+    mv !(src) src/
+shopt -u extglob
+
+go build -o ${BOSH_INSTALL_TARGET}/registration_agent code.cloudfoundry.org/cf-indicators/cmd/registry_agent
+
+mkdir ${BOSH_INSTALL_TARGET}/config/
+cp indicators.yml ${BOSH_INSTALL_TARGET}/config/

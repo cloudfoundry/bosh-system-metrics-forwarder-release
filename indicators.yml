@@ -1,0 +1,35 @@
+---
+metrics:
+- title: Errors Establishing Stream
+  name: ingress_stream_conn_err
+  source_id: bosh-system-metrics-forwarder
+  origin: bosh-system-metrics-forwarder
+  type: counter
+  frequency: scrape duration
+  description: Tracks errors when a stream needs to be established.
+
+indicators:
+- title: Rate of Establish Stream Errors
+  name: ingress_stream_conn_rate
+  description: The Bosh System Metrics Forwarder attempts to connect ot the server once per second by default.
+  metrics:
+  - name: ingress_stream_conn_err
+    source_id: bosh-system-metrics-forwarder
+  promql: rate(ingress_stream_conn_err{source_id="bosh-system-metrics-forwarder"}[5m])
+  thresholds:
+  - level: critical
+    gt: 10
+  - level: warning
+    gt: 1
+  response: Check that BOSH DNS is running.
+
+documentation:
+  owner: PCF Healthwatch
+  title: Bosh System Metrics
+  description: Puts the BOSH metrics in the firehose
+  sections:
+  - title: Metrics Available
+    description: T
+    metrics:
+    - name: ingress_stream_conn_err
+      source_id: bosh-system-metrics-forwarder

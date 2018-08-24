@@ -1,0 +1,17 @@
+---
+name: indicator-registry-agent
+
+templates:
+  ctl.erb: bin/ctl
+
+packages:
+  - indicator-registration-agent
+
+properties:
+  indicators.registry_uri:
+    description: "Indicators registry URI"
+  indicators.interval:
+    description: "The interval for registering indicators"
+  deployment_name:
+    description: "This deployment name for registering with indicators"
+    default: bosh-system-metrics-forwarder
