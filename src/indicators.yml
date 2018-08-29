@@ -16,12 +16,13 @@ indicators:
   - name: ingress_stream_conn_err
     source_id: bosh-system-metrics-forwarder
   promql: rate(ingress_stream_conn_err{source_id="bosh-system-metrics-forwarder"}[5m])
+  measurement: Rate of ingress stream connection errors for bosh-system-metrics forwarder over 5 minutes in seconds
   thresholds:
   - level: critical
     gt: 10
   - level: warning
     gt: 1
-  response: Check that BOSH DNS is running.
+  response: Check that BOSH DNS is running. Make sure the director port for the bosh-system-metrics-server is open.
 
 documentation:
   owner: PCF Healthwatch

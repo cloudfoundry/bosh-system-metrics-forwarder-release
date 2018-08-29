@@ -5,8 +5,22 @@ dependencies:
 - golang-1.10-linux
 
 files:
+- indicators.yml
 - code.cloudfoundry.org/cf-indicators/cmd/registry_agent/* # gosub
 - code.cloudfoundry.org/cf-indicators/pkg/indicator/* # gosub
 - code.cloudfoundry.org/cf-indicators/pkg/registry/* # gosub
+- github.com/beorn7/perks/quantile/* # gosub
+- github.com/gogo/protobuf/proto/* # gosub
+- github.com/golang/protobuf/proto/* # gosub
+- github.com/matttproud/golang_protobuf_extensions/pbutil/* # gosub
+- github.com/prometheus/client_golang/prometheus/* # gosub
+- github.com/prometheus/client_golang/prometheus/promhttp/* # gosub
+- github.com/prometheus/client_model/go/* # gosub
+- github.com/prometheus/common/expfmt/* # gosub
+- github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg/* # gosub
+- github.com/prometheus/common/model/* # gosub
+- github.com/prometheus/procfs/* # gosub
+- github.com/prometheus/procfs/internal/util/* # gosub
+- github.com/prometheus/procfs/nfs/* # gosub
+- github.com/prometheus/procfs/xfs/* # gosub
 - gopkg.in/yaml.v2/* # gosub
-- indicators.yml

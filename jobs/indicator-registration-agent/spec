@@ -8,10 +8,8 @@ packages:
   - indicator-registration-agent
 
 properties:
-  indicators.registry_uri:
+  indicator_registry_uri:
     description: "Indicators registry URI"
-  indicators.interval:
+  registration_interval:
     description: "The interval for registering indicators"
-  deployment_name:
-    description: "This deployment name for registering with indicators"
-    default: bosh-system-metrics-forwarder
+    default: "5m"

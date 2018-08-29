@@ -20,10 +20,10 @@ ulimit -n 8192
 echo $$ > $PIDFILE
 exec chpst -u vcap:vcap ./registration_agent \
   --indicators-path="$PACKAGE_DIR/config/indicators.yml" \
-  --registry="<%= p('indicators.registry_uri') %>" \
-  --deployment="<%= p('deployment_name') %>" \
+  --registry="<%= p('indicator_registry_uri') %>" \
+  --deployment="<%= spec.deployment %>" \
   --product="bosh-system-metrics-forwarder" \
-  --interval="<%= p('indicators.interval') %>" \
+  --interval="<%= p('registration_interval') %>" \
   &>> ${LOG_DIR}/indicator-registration-agent.log
 
 ;;
