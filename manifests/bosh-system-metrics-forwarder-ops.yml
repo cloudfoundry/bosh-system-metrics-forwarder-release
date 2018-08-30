@@ -52,10 +52,6 @@
           ca_cert: "((loggregator_agent.ca))"
           cert: "((loggregator_agent.certificate))"
           key: "((loggregator_agent.private_key))"
-    - name: indicator-registration-agent
-      release: bosh-system-metrics-forwarder
-      properties:
-        indicator_registry_uri: indicator-registry.((system_domain))
     update:
       serial: true
       max_in_flight: 1
