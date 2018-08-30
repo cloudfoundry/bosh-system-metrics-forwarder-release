@@ -9,3 +9,5 @@ shopt -s extglob
 shopt -u extglob
 
 go build -o ${BOSH_INSTALL_TARGET}/bosh-system-metrics-forwarder github.com/pivotal-cf/bosh-system-metrics-forwarder/cmd/forwarder
+
+cp indicators.yml ${BOSH_INSTALL_TARGET}/

@@ -8,6 +8,8 @@ CERT_DIR=$JOB_DIR/config/certs
 
 PACKAGE_DIR=/var/vcap/packages/bosh-system-metrics-forwarder
 
+cp ${PACKAGE_DIR}/indicators.yml ${JOB_DIR}/
+
 case $1 in
 
 start)

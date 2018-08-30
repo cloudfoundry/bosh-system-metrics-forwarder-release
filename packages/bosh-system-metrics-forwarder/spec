@@ -5,6 +5,7 @@ dependencies:
 - golang-1.10-linux
 
 files:
+- indicators.yml
 - github.com/beorn7/perks/quantile/* # gosub
 - github.com/gogo/protobuf/proto/* # gosub
 - github.com/golang/protobuf/proto/* # gosub
