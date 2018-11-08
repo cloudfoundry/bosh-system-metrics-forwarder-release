@@ -17,19 +17,17 @@
     networks:
     - name: default
     jobs:
-    - name: metron_agent
-      release: loggregator
+    - name: loggregator_agent
+      release: loggregator-agent
+      consumes:
+        doppler: {from: doppler, deployment: loggregator}
       properties:
-        doppler:
-          addr:
-        metron_agent:
-          bosh_dns: true
-          disable_udp: false
-          deployment: loggregator
+        disable_udp: false
+        bosh_dns: true
         loggregator:
           tls:
             ca_cert: "((loggregator_agent.ca))"
-            metron:
+            agent:
               cert: "((loggregator_agent.certificate))"
               key: "((loggregator_agent.private_key))"
     - name: bosh-system-metrics-forwarder

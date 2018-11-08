@@ -8,8 +8,10 @@ stemcells:
 releases:
 - name: bosh-system-metrics-forwarder
   version: latest
-- name: loggregator
-  version: latest
+- name: "loggregator-agent"
+  version: "3.0"
+  url: "https://bosh.io/d/github.com/cloudfoundry/loggregator-agent-release?v=3.0"
+  sha1: "e9a4d9444a8d747982b54fa41f523869c113ab58"
 
 instance_groups:
 - name: bosh-system-metrics-forwarder
@@ -22,20 +24,20 @@ instance_groups:
   networks:
   - name: default
   jobs:
-  - name: metron_agent
-    release: loggregator
-    properties: &metron_agent_properties
-      doppler:
-        addr: doppler.service.cf.internal
-      metron_agent:
-        disable_udp: false
-        deployment: loggregator
+  - name: loggregator_agent
+    release: loggregator-agent
+    consumes:
+      doppler: {from: doppler, deployment: loggregator}
+    properties:
+      disable_udp: false
+      bosh_dns: true
       loggregator:
         tls:
-          ca_cert: "((loggregator_metron.ca))"
-          metron:
-            cert: "((loggregator_metron.certificate))"
-            key: "((loggregator_metron.private_key))"
+          ca_cert: "((loggregator_agent.ca))"
+          agent:
+            cert: "((loggregator_agent.certificate))"
+            key: "((loggregator_agent.private_key))"
+
   - name: bosh-system-metrics-forwarder
     release: bosh-system-metrics-forwarder
     properties:
@@ -53,9 +55,9 @@ instance_groups:
         identity: "system_metrics_client"
         password: "((system_metrics_uaa_client_secret))"
       loggregator:
-        ca_cert: "((loggregator_metron.ca))"
-        cert: "((loggregator_metron.certificate))"
-        key: "((loggregator_metron.private_key))"
+        ca_cert: "((loggregator_agent.ca))"
+        cert: "((loggregator_agent.certificate))"
+        key: "((loggregator_agent.private_key))"
   update:
     max_in_flight: 1
     serial: true
