@@ -253,9 +253,6 @@ deploy-loggregator-with-metrics-forwarder: |
 
   cat << EOF > loggregator-vm-default.yml
   - type: replace
-    path: /instance_groups/name=log-cache/vm_type
-    value: default
-  - type: replace
     path: /instance_groups/name=doppler/vm_type
     value: default
   - type: replace
