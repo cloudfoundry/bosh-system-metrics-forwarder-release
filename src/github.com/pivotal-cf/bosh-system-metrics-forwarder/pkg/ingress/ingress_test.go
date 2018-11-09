@@ -308,22 +308,12 @@ func (t *spyTokener) TokenCallCount() int32 {
 
 var envelope = &loggregator_v2.Envelope{
 	Timestamp: 1499293724,
-	Tags: map[string]*loggregator_v2.Value{
-		"job": {Data: &loggregator_v2.Value_Text{
-			Text: "consul",
-		}},
-		"index": {Data: &loggregator_v2.Value_Integer{
-			Integer: 4,
-		}},
-		"id": {Data: &loggregator_v2.Value_Text{
-			Text: "6f60a3ce-9e4d-477f-ba45-7d29bcfab5b9",
-		}},
-		"origin": {Data: &loggregator_v2.Value_Text{
-			Text: "bosh-system-metrics-forwarder",
-		}},
-		"deployment": {Data: &loggregator_v2.Value_Text{
-			Text: "loggregator",
-		}},
+	Tags: map[string]string{
+		"job": "consul",
+		"index": "4",
+		"id": "6f60a3ce-9e4d-477f-ba45-7d29bcfab5b9",
+		"origin": "bosh-system-metrics-forwarder",
+		"deployment": "loggregator",
 	},
 	Message: &loggregator_v2.Envelope_Gauge{
 		Gauge: &loggregator_v2.Gauge{

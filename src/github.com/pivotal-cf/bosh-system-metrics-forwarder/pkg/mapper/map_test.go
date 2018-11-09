@@ -17,25 +17,13 @@ func TestMapHeartbeat(t *testing.T) {
 
 	Expect(envelope).To(Equal(&loggregator_v2.Envelope{
 		Timestamp: 1499293724,
-		Tags: map[string]*loggregator_v2.Value{
-			"job": {Data: &loggregator_v2.Value_Text{
-				Text: "consul",
-			}},
-			"index": {Data: &loggregator_v2.Value_Text{
-				Text: "6f60a3ce-9e4d-477f-ba45-7d29bcfab5b9",
-			}},
-			"id": {Data: &loggregator_v2.Value_Text{
-				Text: "6f60a3ce-9e4d-477f-ba45-7d29bcfab5b9",
-			}},
-			"origin": {Data: &loggregator_v2.Value_Text{
-				Text: "bosh-system-metrics-forwarder",
-			}},
-			"deployment": {Data: &loggregator_v2.Value_Text{
-				Text: "loggregator",
-			}},
-			"ip": {Data: &loggregator_v2.Value_Text{
-				Text: "1.2.3.4",
-			}},
+		Tags: map[string]string{
+			"job": "consul",
+			"index": "6f60a3ce-9e4d-477f-ba45-7d29bcfab5b9",
+			"id": "6f60a3ce-9e4d-477f-ba45-7d29bcfab5b9",
+			"origin": "bosh-system-metrics-forwarder",
+			"deployment": "loggregator",
+			"ip": "1.2.3.4",
 		},
 		Message: &loggregator_v2.Envelope_Gauge{
 			Gauge: &loggregator_v2.Gauge{

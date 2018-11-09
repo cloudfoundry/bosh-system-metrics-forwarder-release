@@ -36,25 +36,13 @@ func mapHeartbeat(event *definitions.Event, ipTag string) *loggregator_v2.Envelo
 
 	return &loggregator_v2.Envelope{
 		Timestamp: event.Timestamp,
-		Tags: map[string]*loggregator_v2.Value{
-			"job": {Data: &loggregator_v2.Value_Text{
-				Text: event.GetHeartbeat().GetJob(),
-			}},
-			"index": {Data: &loggregator_v2.Value_Text{
-				Text: event.GetHeartbeat().GetInstanceId(),
-			}},
-			"id": {Data: &loggregator_v2.Value_Text{
-				Text: event.GetHeartbeat().GetInstanceId(),
-			}},
-			"origin": {Data: &loggregator_v2.Value_Text{
-				Text: "bosh-system-metrics-forwarder",
-			}},
-			"deployment": {Data: &loggregator_v2.Value_Text{
-				Text: event.GetDeployment(),
-			}},
-			"ip": {Data: &loggregator_v2.Value_Text{
-				Text: ipTag,
-			}},
+		Tags: map[string]string{
+			"job": event.GetHeartbeat().GetJob(),
+			"index": event.GetHeartbeat().GetInstanceId(),
+			"id": event.GetHeartbeat().GetInstanceId(),
+			"origin": "bosh-system-metrics-forwarder",
+			"deployment": event.GetDeployment(),
+			"ip": ipTag,
 		},
 		Message: &loggregator_v2.Envelope_Gauge{
 			Gauge: &loggregator_v2.Gauge{
