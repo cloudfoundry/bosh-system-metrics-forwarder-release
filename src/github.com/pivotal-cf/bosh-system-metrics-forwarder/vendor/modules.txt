@@ -1,11 +1,29 @@
 # github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973
 github.com/beorn7/perks/quantile
+# github.com/cloudfoundry/noaa v2.1.0+incompatible
+github.com/cloudfoundry/noaa/consumer
+github.com/cloudfoundry/noaa
+github.com/cloudfoundry/noaa/consumer/internal
+github.com/cloudfoundry/noaa/errors
+# github.com/cloudfoundry/sonde-go v0.0.0-20171206171820-b33733203bb4
+github.com/cloudfoundry/sonde-go/events
+# github.com/gogo/protobuf v1.1.1
+github.com/gogo/protobuf/proto
+github.com/gogo/protobuf/gogoproto
+github.com/gogo/protobuf/protoc-gen-gogo/descriptor
 # github.com/golang/protobuf v1.2.0
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
+# github.com/gorilla/websocket v1.4.0
+github.com/gorilla/websocket
+# github.com/mailru/easyjson v0.0.0-20180823135443-60711f1a8329
+github.com/mailru/easyjson
+github.com/mailru/easyjson/jlexer
+github.com/mailru/easyjson/jwriter
+github.com/mailru/easyjson/buffer
 # github.com/matttproud/golang_protobuf_extensions v1.0.1
 github.com/matttproud/golang_protobuf_extensions/pbutil
 # github.com/onsi/gomega v1.4.2
