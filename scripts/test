@@ -1,6 +1,6 @@
 #!/bin/bash
 
-GO111MODULE=ONE
+export GO111MODULE=on
 
 pushd src/github.com/pivotal-cf/bosh-system-metrics-forwarder
   go test -mod=vendor ./... -race -count 10
