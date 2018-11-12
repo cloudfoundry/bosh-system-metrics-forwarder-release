@@ -1,7 +1,14 @@
 #!/bin/bash
 
-set -ex
+GO111MODULE=ONE
 
 pushd src/github.com/pivotal-cf/bosh-system-metrics-forwarder
-go test ./... -race -count 10
+  go test -mod=vendor ./... -race -count 10
+  exit_status=$?
 popd
+
+if [ $exit_status -ne 0 ]; then
+  echo "TESTS FAILED!"
+fi
+
+exit $exit_status
