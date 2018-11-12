@@ -2,7 +2,7 @@
 name: bosh-system-metrics-forwarder
 
 templates:
-  ctl.erb: bin/ctl
+  bpm.yml.erb: config/bpm.yml
   bosh_ca.crt.erb: config/certs/bosh/ca.crt
   metrics_ca.crt.erb: config/certs/metrics/ca.crt
   loggregator_ca.crt.erb: config/certs/loggregator/ca.crt

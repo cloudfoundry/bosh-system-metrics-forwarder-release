@@ -1,0 +1,37 @@
+---
+processes:
+- name: bosh-system-metrics-forwarder
+  executable: /var/vcap/packages/bosh-system-metrics-forwarder/bosh-system-metrics-forwarder
+  args:
+    - --director-url
+    - <%= p('bosh.url') %>
+    - --director-ca
+    - /var/vcap/jobs/bosh-system-metrics-forwarder/config/certs/bosh/ca.crt
+    - --auth-client-identity
+    - <%= p('uaa_client.identity') %>
+    - --auth-client-secret
+    - <%= p('uaa_client.password') %>
+    - --metrics-server-addr
+    - <%= p('metrics_server.addr') %>
+    - --metrics-ca
+    - /var/vcap/jobs/bosh-system-metrics-forwarder/config/certs/metrics/ca.crt
+    - --metrics-cn
+    - <%= p('metrics_forwarder.tls.common_name') %>
+    - --metron-port
+    - <%= p('loggregator.v2_api_port') %>
+    - --metron-ca
+    - /var/vcap/jobs/bosh-system-metrics-forwarder/config/certs/loggregator/ca.crt
+    - --metron-cert
+    - /var/vcap/jobs/bosh-system-metrics-forwarder/config/certs/loggregator/client.crt
+    - --metron-key
+    - /var/vcap/jobs/bosh-system-metrics-forwarder/config/certs/loggregator/client.key
+    - --subscription-id
+    - <%= p('metrics_forwarder.subscription_id') %>
+    - --envelope-ip-tag
+    - <%= p('metrics_forwarder.envelope_ip_tag') %>
+    - --health-port
+    - <%= p('metrics_forwarder.health_port') %>
+    - --pprof-port
+    - <%= p('metrics_forwarder.pprof_port') %>
+  limits:
+    memory: 256M

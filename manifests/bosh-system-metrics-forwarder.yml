@@ -12,6 +12,10 @@ releases:
   version: "3.0"
   url: "https://bosh.io/d/github.com/cloudfoundry/loggregator-agent-release?v=3.0"
   sha1: "e9a4d9444a8d747982b54fa41f523869c113ab58"
+- name: "bpm"
+  version: "0.12.3"
+  url: "https://bosh.io/d/github.com/cloudfoundry-incubator/bpm-release?v=0.12.3"
+  sha1: "313664d2e6d8485ffa0683979a401f7722f63a50"
 
 instance_groups:
 - name: bosh-system-metrics-forwarder
@@ -58,6 +62,8 @@ instance_groups:
         ca_cert: "((loggregator_agent.ca))"
         cert: "((loggregator_agent.certificate))"
         key: "((loggregator_agent.private_key))"
+  - name: bpm
+    release: bpm
   update:
     max_in_flight: 1
     serial: true
