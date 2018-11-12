@@ -162,7 +162,7 @@ jobs:
       image_resource:
         type: docker-image
         source:
-          repository: loggregator/base
+          repository: pcfmetrics/indicators-build-and-test
           tag: latest
       inputs:
       - name: bosh-system-metrics-server-release
@@ -188,7 +188,7 @@ jobs:
       image_resource:
         type: docker-image
         source:
-          repository: loggregator/base
+          repository: pcfmetrics/indicators-build-and-test
           tag: latest
 
       inputs:
@@ -265,7 +265,7 @@ jobs:
       image_resource:
         type: docker-image
         source:
-          repository: loggregator/base
+          repository: pcfmetrics/indicators-build-and-test
       inputs:
       - name: updated-deployments-metrics
       outputs:
@@ -340,7 +340,7 @@ jobs:
       image_resource:
         type: docker-image
         source:
-          repository: loggregator/base
+          repository: pcfmetrics/indicators-build-and-test
       inputs:
       - name: updated-deployments-metrics
       outputs:
@@ -388,7 +388,7 @@ jobs:
       image_resource:
         type: docker-image
         source:
-          repository: loggregator/base
+          repository: pcfmetrics/indicators-build-and-test
       inputs:
       - name: deployments-metrics
       - name: bosh-system-metrics-forwarder-release
@@ -419,11 +419,10 @@ jobs:
           ssh-keyscan $DIRECTOR_IP >> $HOME/.ssh/known_hosts
           ssh jumpbox@$DIRECTOR_IP -i /tmp/jumpbox.key -L 8081:$(bosh -d loggregator instances | grep log-api | awk '{print $4}'):8081 -N &
 
-          export GOPATH=$PWD/bosh-system-metrics-forwarder-release/
-          smoke_tests_dir=$GOPATH/src/smoke-tests
+          smoke_tests_dir=bosh-system-metrics-forwarder-release/src/github.com/pivotal-cf/bosh-system-metrics-forwarder/cmd/smoke-tests
           pushd ${smoke_tests_dir}
             export LOGGREGATOR_ADDR="ws://localhost:8081"
-            go run main.go
+            go run -mod=vendor main.go
           popd
 
 
@@ -490,7 +489,7 @@ jobs:
       image_resource:
         type: docker-image
         source:
-          repository: loggregator/base
+          repository: pcfmetrics/indicators-build-and-test
       inputs:
       - name: updated-deployments-metrics
       outputs:
@@ -515,7 +514,7 @@ jobs:
       image_resource:
         type: docker-image
         source:
-          repository: loggregator/base
+          repository: pcfmetrics/indicators-build-and-test
       inputs:
       - name: bosh-system-metrics-forwarder-release
       - name: deployments-metrics
@@ -541,7 +540,7 @@ jobs:
       image_resource:
         type: docker-image
         source:
-          repository: loggregator/base
+          repository: pcfmetrics/indicators-build-and-test
       inputs:
       - name: deployments-metrics
       - name: datadog-nozzle-repo
@@ -620,7 +619,7 @@ jobs:
       image_resource:
         type: docker-image
         source:
-          repository: loggregator/base
+          repository: pcfmetrics/indicators-build-and-test
       inputs:
       - name: version
       - name: release
@@ -680,7 +679,7 @@ jobs:
       image_resource:
         type: docker-image
         source:
-          repository: loggregator/base
+          repository: pcfmetrics/indicators-build-and-test
       inputs:
       - name: version
       - name: release
@@ -798,7 +797,7 @@ jobs:
       image_resource:
         type: docker-image
         source:
-          repository: loggregator/base
+          repository: pcfmetrics/indicators-build-and-test
       inputs:
       - name: updated-deployments-metrics
       outputs:
