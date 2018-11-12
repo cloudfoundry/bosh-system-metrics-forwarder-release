@@ -12,4 +12,5 @@ shopt -u extglob
 
 export GO111MODULE=on
 
-go build -mod=vendor -o ${BOSH_INSTALL_TARGET}/bosh-system-metrics-forwarder github.com/pivotal-cf/bosh-system-metrics-forwarder/cmd/forwarder
+cd github.com/pivotal-cf/bosh-system-metrics-forwarder/
+go build -mod=vendor -o ${BOSH_INSTALL_TARGET}/bosh-system-metrics-forwarder cmd/forwarder/main.go
