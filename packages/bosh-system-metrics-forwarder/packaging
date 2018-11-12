@@ -4,12 +4,6 @@ source /var/vcap/packages/golang-1.11-linux/bosh/compile.env
 
 mv indicators.yml ${BOSH_INSTALL_TARGET}/
 
-mkdir src
-
-shopt -s extglob
-    mv !(src) src/
-shopt -u extglob
-
 export GO111MODULE=on
 
 cd github.com/pivotal-cf/bosh-system-metrics-forwarder/
