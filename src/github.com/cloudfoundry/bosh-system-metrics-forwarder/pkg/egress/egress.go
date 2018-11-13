@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
+	"github.com/cloudfoundry/bosh-system-metrics-forwarder/pkg/loggregator_v2"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"

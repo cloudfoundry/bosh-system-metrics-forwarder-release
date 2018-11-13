@@ -10,8 +10,8 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/egress"
-	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
+	"github.com/cloudfoundry/bosh-system-metrics-forwarder/pkg/egress"
+	"github.com/cloudfoundry/bosh-system-metrics-forwarder/pkg/loggregator_v2"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )

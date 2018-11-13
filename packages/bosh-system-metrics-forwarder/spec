@@ -6,4 +6,4 @@ dependencies:
 
 files:
 - indicators.yml
-- github.com/pivotal-cf/bosh-system-metrics-forwarder/**/*
+- github.com/cloudfoundry/bosh-system-metrics-forwarder/**/*

@@ -13,9 +13,9 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/definitions"
-	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/ingress"
-	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
+	"github.com/cloudfoundry/bosh-system-metrics-forwarder/pkg/definitions"
+	"github.com/cloudfoundry/bosh-system-metrics-forwarder/pkg/ingress"
+	"github.com/cloudfoundry/bosh-system-metrics-forwarder/pkg/loggregator_v2"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

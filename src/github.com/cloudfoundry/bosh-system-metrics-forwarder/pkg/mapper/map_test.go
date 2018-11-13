@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/definitions"
-	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
-	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/mapper"
+	"github.com/cloudfoundry/bosh-system-metrics-forwarder/pkg/definitions"
+	"github.com/cloudfoundry/bosh-system-metrics-forwarder/pkg/loggregator_v2"
+	"github.com/cloudfoundry/bosh-system-metrics-forwarder/pkg/mapper"
 )
 
 func TestMapHeartbeat(t *testing.T) {

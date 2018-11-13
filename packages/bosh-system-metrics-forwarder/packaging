@@ -9,5 +9,5 @@ export GO111MODULE=on
 mkdir -p cache
 export GOCACHE=cache
 
-cd github.com/pivotal-cf/bosh-system-metrics-forwarder/
+cd github.com/cloudfoundry/bosh-system-metrics-forwarder/
 go build -mod=vendor -o ${BOSH_INSTALL_TARGET}/bosh-system-metrics-forwarder cmd/forwarder/main.go

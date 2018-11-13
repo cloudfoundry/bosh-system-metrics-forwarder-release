@@ -3,8 +3,8 @@ package mapper
 import (
 	"errors"
 
-	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/definitions"
-	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
+	"github.com/cloudfoundry/bosh-system-metrics-forwarder/pkg/definitions"
+	"github.com/cloudfoundry/bosh-system-metrics-forwarder/pkg/loggregator_v2"
 )
 
 // New returns a function that converts a bosh Event to an envelope.

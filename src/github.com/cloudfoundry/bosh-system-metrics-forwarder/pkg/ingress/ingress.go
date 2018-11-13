@@ -6,8 +6,8 @@ import (
 
 	"sync"
 
-	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/definitions"
-	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/loggregator_v2"
+	"github.com/cloudfoundry/bosh-system-metrics-forwarder/pkg/definitions"
+	"github.com/cloudfoundry/bosh-system-metrics-forwarder/pkg/loggregator_v2"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"

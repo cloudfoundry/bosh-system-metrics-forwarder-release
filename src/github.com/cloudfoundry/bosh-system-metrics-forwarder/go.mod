@@ -1,4 +1,4 @@
-module github.com/pivotal-cf/bosh-system-metrics-forwarder
+module github.com/cloudfoundry/bosh-system-metrics-forwarder
 
 require (
 	github.com/apoydence/eachers v0.0.0-20181020210610-23942921fe77 // indirect

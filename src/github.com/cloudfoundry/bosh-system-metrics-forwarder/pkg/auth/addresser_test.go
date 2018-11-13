@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-	"github.com/pivotal-cf/bosh-system-metrics-forwarder/pkg/auth"
+	"github.com/cloudfoundry/bosh-system-metrics-forwarder/pkg/auth"
 )
 
 func TestAuthServerAddrMakesRequestToInfoServer(t *testing.T) {

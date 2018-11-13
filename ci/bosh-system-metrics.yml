@@ -419,7 +419,7 @@ jobs:
           ssh-keyscan $DIRECTOR_IP >> $HOME/.ssh/known_hosts
           ssh jumpbox@$DIRECTOR_IP -i /tmp/jumpbox.key -L 8081:$(bosh -d loggregator instances | grep log-api | awk '{print $4}'):8081 -N &
 
-          smoke_tests_dir=bosh-system-metrics-forwarder-release/src/github.com/pivotal-cf/bosh-system-metrics-forwarder/cmd/smoke-tests
+          smoke_tests_dir=bosh-system-metrics-forwarder-release/src/github.com/cloudfoundry/bosh-system-metrics-forwarder/cmd/smoke-tests
           pushd ${smoke_tests_dir}
             export LOGGREGATOR_ADDR="ws://localhost:8081"
             go run -mod=vendor main.go
