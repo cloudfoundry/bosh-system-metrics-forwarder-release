@@ -607,8 +607,6 @@ jobs:
   - aggregate:
     - get: version
       resource: bosh-system-metrics-server-version
-      params:
-        bump: patch
     - get: release
       resource: bosh-system-metrics-server-release
       passed:
@@ -641,7 +639,7 @@ jobs:
 
   - put: bosh-system-metrics-server-version
     params:
-      file: version/version
+      bump: patch
   - put: bosh-system-metrics-server-final-release
     params:
       repository: final-server-release
@@ -667,8 +665,6 @@ jobs:
   - aggregate:
     - get: version
       resource: bosh-system-metrics-forwarder-version
-      params:
-        bump: patch
     - get: release
       resource: bosh-system-metrics-forwarder-release
       passed:
@@ -701,7 +697,7 @@ jobs:
 
   - put: bosh-system-metrics-forwarder-version
     params:
-      file: version/version
+      bump: patch
   - put: bosh-system-metrics-forwarder-final-release
     params:
       repository: final-forwarder-release
