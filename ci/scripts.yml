@@ -118,6 +118,7 @@ create-acceptance-bosh-lite-with-metrics-server: |
     -o bosh-deployment/bosh-lite-runc.yml \
     -o bosh-deployment/uaa.yml \
     -o bosh-deployment/external-ip-not-recommended-uaa.yml \
+    -o bosh-deployment/experimental/postgres-9-4.yml \
     -o bosh-system-metrics-server-release/manifests/server-ops.yml \
     -o ${ENV_DIR}/ops.yml
 
@@ -190,6 +191,7 @@ create-ci-bosh-lite-with-metrics-server: |
     -o bosh-deployment/bosh-lite-runc.yml \
     -o bosh-deployment/uaa.yml \
     -o bosh-deployment/external-ip-not-recommended-uaa.yml \
+    -o bosh-deployment/experimental/postgres-9-4.yml \
     -o bosh-system-metrics-server-release/manifests/server-ops.yml
 
   # upload stemcell needed for bosh-lite "vms"
@@ -263,8 +265,8 @@ deploy-loggregator-with-metrics-forwarder: |
   loggregator_dir="$PWD/loggregator-repo"
   bosh -n -d loggregator deploy \
     --vars-store "${ENV_DIR}/creds.yml" \
-    -o "${DEPLOY_DIR}/loggregator-ops.yml" \
     -o "$forwarder_release_dir/manifests/bosh-system-metrics-forwarder-ops.yml" \
+    -o "${DEPLOY_DIR}/loggregator-ops.yml" \
     -o "loggregator-vm-default.yml" \
     "$loggregator_dir/manifests/loggregator.yml"
 

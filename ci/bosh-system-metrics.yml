@@ -67,7 +67,7 @@ resources:
   type: git
   source:
     uri: https://github.com/cloudfoundry/loggregator-release
-    branch: release-elect
+    branch: v103.4
 
 - name: datadog-nozzle-repo
   type: git
