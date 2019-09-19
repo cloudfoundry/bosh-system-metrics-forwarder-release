@@ -1,6 +1,6 @@
 # Bosh System Metrics Forwarder Release
 
-This consumes bosh health events and forwards _heartbeat events only_ to Loggregator.
+This consumes bosh health events and forwards _heartbeat events only_ to Loggregator. For more info, see https://github.com/cloudfoundry/bosh-system-metrics-server-release/wiki
 
 ## Architecture
 
