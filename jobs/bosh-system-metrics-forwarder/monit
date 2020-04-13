@@ -1,5 +1,7 @@
+<% if p('enabled') %>
 check process bosh-system-metrics-forwarder
   with pidfile /var/vcap/sys/run/bpm/bosh-system-metrics-forwarder/bosh-system-metrics-forwarder.pid
   start program "/var/vcap/jobs/bpm/bin/bpm start bosh-system-metrics-forwarder"
   stop program "/var/vcap/jobs/bpm/bin/bpm stop bosh-system-metrics-forwarder" with timeout 60 seconds
   group vcap
+<% end %>

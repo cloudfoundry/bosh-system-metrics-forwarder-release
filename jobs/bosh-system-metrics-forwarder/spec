@@ -13,6 +13,10 @@ packages:
   - bosh-system-metrics-forwarder
 
 properties:
+  enabled:
+   description: "Enable BOSH system metrics forwarder"
+   default: false
+
   bosh.url:
     description: "The url of the director"
   bosh.root_ca_cert:
