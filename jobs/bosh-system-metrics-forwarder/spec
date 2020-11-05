@@ -15,7 +15,7 @@ packages:
 properties:
   enabled:
    description: "Enable BOSH system metrics forwarder"
-   default: false
+   default: true
 
   bosh.url:
     description: "The url of the director"
