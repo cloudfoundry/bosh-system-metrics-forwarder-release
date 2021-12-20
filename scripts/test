@@ -1,7 +1,5 @@
 #!/bin/bash
 
-export GO111MODULE=on
-
 pushd src/github.com/cloudfoundry/bosh-system-metrics-forwarder
   go test -mod=vendor ./... -race -count 10
   exit_status=$?
