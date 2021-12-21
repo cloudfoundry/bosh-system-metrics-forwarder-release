@@ -17,7 +17,3 @@ Once verified, the server begins streaming events via secure grpc to the forward
 
 [server]: https://github.com/cloudfoundry/bosh-system-metrics-server-release
 [diagram]: https://docs.google.com/a/pivotal.io/drawings/d/1l1iAQaBc6SHIpWb3x-lI9p4JVIZN_3ErepbAohqnaPw/pub?w=1192&h=719
-
-## Development setup
-
-Dependencies are managed with submodules. Run `git submodule update --recursive` to install.
