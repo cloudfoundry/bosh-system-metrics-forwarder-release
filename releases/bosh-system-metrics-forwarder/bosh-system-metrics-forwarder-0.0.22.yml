@@ -1,0 +1,27 @@
+name: bosh-system-metrics-forwarder
+version: 0.0.22
+commit_hash: 85a87bd
+uncommitted_changes: false
+jobs:
+- name: bosh-system-metrics-forwarder
+  version: 7045e1a908e4fe7f205f7325037eba18a5689e5c8d772cb8ae97724630d30ee6
+  fingerprint: 7045e1a908e4fe7f205f7325037eba18a5689e5c8d772cb8ae97724630d30ee6
+  sha1: sha256:ac380d4310bafc15e14621a83d0cbf449197a10406a76a9d28f438494f109269
+  packages:
+  - bosh-system-metrics-forwarder
+packages:
+- name: bosh-system-metrics-forwarder
+  version: d9866fcc64ef6aa72d7cb4315703c57a4e41b357b32504edd4085a58ef1ef46e
+  fingerprint: d9866fcc64ef6aa72d7cb4315703c57a4e41b357b32504edd4085a58ef1ef46e
+  sha1: sha256:0631efad790ee398f7b2230a29d2887dacada84d257d72d6ccf31b8d0595514b
+  dependencies:
+  - golang-1-linux
+- name: golang-1-linux
+  version: b8021c5bdc377a4807fb1caad8416215032698ae356825afb427c7efc5ef76c1
+  fingerprint: b8021c5bdc377a4807fb1caad8416215032698ae356825afb427c7efc5ef76c1
+  sha1: sha256:2a2785460af04aee276c3c2b38dd914c8e1cbefbf52cb14da130207e82e86289
+  dependencies: []
+license:
+  version: b3d3a6be0a737881904a718497cb593042aa0ec56ad91b93934e395a2f9c1a3d
+  fingerprint: b3d3a6be0a737881904a718497cb593042aa0ec56ad91b93934e395a2f9c1a3d
+  sha1: sha256:22fc1d06cb81c91687b496d3e3690528605f3304195b6306f86e2f90b5fe917d
