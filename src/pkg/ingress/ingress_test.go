@@ -1,6 +1,7 @@
 package ingress_test
 
 import (
+	"bytes"
 	"fmt"
 	"sync/atomic"
 	"testing"
@@ -12,10 +13,10 @@ import (
 
 	"time"
 
-	. "github.com/onsi/gomega"
 	"github.com/cloudfoundry/bosh-system-metrics-forwarder/pkg/definitions"
 	"github.com/cloudfoundry/bosh-system-metrics-forwarder/pkg/ingress"
 	"github.com/cloudfoundry/bosh-system-metrics-forwarder/pkg/loggregator_v2"
+	. "github.com/onsi/gomega"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -25,7 +26,6 @@ import (
 
 func TestStartProcessesEvents(t *testing.T) {
 	RegisterTestingT(t)
-	log.SetOutput(ioutil.Discard)
 
 	receiver := newSpyReceiver()
 	client := newSpyEgressClient(receiver, nil)
@@ -33,7 +33,7 @@ func TestStartProcessesEvents(t *testing.T) {
 	messages := make(chan *loggregator_v2.Envelope, 1)
 	tokener := newSpyTokener()
 
-	i := ingress.New(client, mapper.F, messages, tokener, "sub-id")
+	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", logger)
 	i.Start()
 
 	Eventually(messages).Should(Receive(Equal(envelope)))
@@ -41,7 +41,6 @@ func TestStartProcessesEvents(t *testing.T) {
 
 func TestStartRetriesUponReceiveError(t *testing.T) {
 	RegisterTestingT(t)
-	log.SetOutput(ioutil.Discard)
 
 	receiver := newSpyReceiver()
 	receiver.RecvError(errors.New("some error"))
@@ -50,7 +49,7 @@ func TestStartRetriesUponReceiveError(t *testing.T) {
 	messages := make(chan *loggregator_v2.Envelope, 1)
 	tokener := newSpyTokener()
 
-	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", ingress.WithReconnectWait(time.Millisecond))
+	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", logger, ingress.WithReconnectWait(time.Millisecond))
 	i.Start()
 
 	Eventually(client.BoshMetricsCallCount).Should(BeNumerically(">", 1))
@@ -60,9 +59,32 @@ func TestStartRetriesUponReceiveError(t *testing.T) {
 	Eventually(messages).Should(Receive(Equal(envelope)))
 }
 
+func TestLogOutputWhenReconnectingAfterTimeout(t *testing.T) {
+	RegisterTestingT(t)
+	var buf bytes.Buffer
+	spyLogger := log.New(&buf, "", log.LstdFlags)
+
+	receiver := newSpyReceiver()
+	receiver.RecvError(context.DeadlineExceeded)
+	client := newSpyEgressClient(receiver, nil)
+	mapper := newSpyMapper(envelope, nil)
+	messages := make(chan *loggregator_v2.Envelope, 1)
+	tokener := newSpyTokener()
+
+	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", spyLogger, ingress.WithReconnectWait(time.Millisecond))
+	i.Start()
+
+	Eventually(client.BoshMetricsCallCount).Should(BeNumerically(">", 1))
+
+	receiver.RecvError(nil)
+
+	Eventually(messages).Should(Receive(Equal(envelope)))
+	Expect(buf.String()).To(ContainSubstring("Starting ingestor..."))
+	Expect(buf.String()).ToNot(ContainSubstring("error receiving from metrics server"))
+}
+
 func TestStartGetsToken(t *testing.T) {
 	RegisterTestingT(t)
-	log.SetOutput(ioutil.Discard)
 
 	receiver := newSpyReceiver()
 	client := newSpyEgressClient(receiver, nil)
@@ -70,7 +92,7 @@ func TestStartGetsToken(t *testing.T) {
 	messages := make(chan *loggregator_v2.Envelope, 1)
 	tokener := newSpyTokener()
 
-	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", ingress.WithReconnectWait(time.Millisecond))
+	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", logger, ingress.WithReconnectWait(time.Millisecond))
 	i.Start()
 
 	Eventually(tokener.TokenCallCount).Should(Equal(int32(1)))
@@ -82,7 +104,6 @@ func TestStartGetsToken(t *testing.T) {
 
 func TestEstablishStreamRefreshesTokenUponPermissionDeniedError(t *testing.T) {
 	RegisterTestingT(t)
-	log.SetOutput(ioutil.Discard)
 
 	receiver := newSpyReceiver()
 	client := newSpyEgressClient(
@@ -93,7 +114,7 @@ func TestEstablishStreamRefreshesTokenUponPermissionDeniedError(t *testing.T) {
 	messages := make(chan *loggregator_v2.Envelope, 1)
 	tokener := newSpyTokener()
 
-	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", ingress.WithReconnectWait(time.Millisecond))
+	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", logger, ingress.WithReconnectWait(time.Millisecond))
 	i.Start()
 
 	Eventually(tokener.TokenCallCount).Should(BeNumerically(">", 1))
@@ -106,7 +127,6 @@ func TestEstablishStreamRefreshesTokenUponPermissionDeniedError(t *testing.T) {
 
 func TestProcessMessagesRefreshesTokenUponPermissionDeniedError(t *testing.T) {
 	RegisterTestingT(t)
-	log.SetOutput(ioutil.Discard)
 
 	receiver := newSpyReceiver()
 	receiver.RecvError(status.Error(codes.PermissionDenied, "some-error"))
@@ -115,7 +135,7 @@ func TestProcessMessagesRefreshesTokenUponPermissionDeniedError(t *testing.T) {
 	messages := make(chan *loggregator_v2.Envelope, 1)
 	tokener := newSpyTokener()
 
-	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", ingress.WithReconnectWait(time.Millisecond))
+	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", logger, ingress.WithReconnectWait(time.Millisecond))
 	i.Start()
 
 	Eventually(tokener.TokenCallCount).Should(BeNumerically(">", 1))
@@ -128,7 +148,6 @@ func TestProcessMessagesRefreshesTokenUponPermissionDeniedError(t *testing.T) {
 
 func TestStartContinuesUponConversionError(t *testing.T) {
 	RegisterTestingT(t)
-	log.SetOutput(ioutil.Discard)
 
 	receiver := newSpyReceiver()
 	client := newSpyEgressClient(receiver, nil)
@@ -136,7 +155,7 @@ func TestStartContinuesUponConversionError(t *testing.T) {
 	messages := make(chan *loggregator_v2.Envelope, 1)
 	tokener := newSpyTokener()
 
-	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", ingress.WithReconnectWait(time.Millisecond))
+	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", logger, ingress.WithReconnectWait(time.Millisecond))
 	i.Start()
 
 	Consistently(messages).ShouldNot(Receive())
@@ -155,7 +174,7 @@ func TestStartDoesNotBlockSendingEnvelopes(t *testing.T) {
 	messages := make(chan *loggregator_v2.Envelope, 2)
 	tokener := newSpyTokener()
 
-	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", ingress.WithReconnectWait(time.Millisecond))
+	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", logger, ingress.WithReconnectWait(time.Millisecond))
 	i.Start()
 
 	Eventually(receiver.RecvCallCount).Should(BeNumerically(">", 3))
@@ -163,7 +182,6 @@ func TestStartDoesNotBlockSendingEnvelopes(t *testing.T) {
 
 func TestStartDoesNotReconnectAfterStopping(t *testing.T) {
 	RegisterTestingT(t)
-	log.SetOutput(ioutil.Discard)
 
 	receiver := newSpyReceiver()
 	receiver.RecvError(grpc.ErrClientConnClosing)
@@ -172,7 +190,7 @@ func TestStartDoesNotReconnectAfterStopping(t *testing.T) {
 	messages := make(chan *loggregator_v2.Envelope, 2)
 	tokener := newSpyTokener()
 
-	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", ingress.WithReconnectWait(250*time.Millisecond))
+	i := ingress.New(client, mapper.F, messages, tokener, "sub-id", logger, ingress.WithReconnectWait(250*time.Millisecond))
 	stop := i.Start()
 
 	Eventually(client.BoshMetricsCallCount).Should(Equal(int32(1)))
@@ -306,13 +324,15 @@ func (t *spyTokener) TokenCallCount() int32 {
 	return atomic.LoadInt32(&t.tokenCallCount)
 }
 
+var logger = log.New(ioutil.Discard, "", log.LstdFlags)
+
 var envelope = &loggregator_v2.Envelope{
 	Timestamp: 1499293724,
 	Tags: map[string]string{
-		"job": "consul",
-		"index": "4",
-		"id": "6f60a3ce-9e4d-477f-ba45-7d29bcfab5b9",
-		"origin": "bosh-system-metrics-forwarder",
+		"job":        "consul",
+		"index":      "4",
+		"id":         "6f60a3ce-9e4d-477f-ba45-7d29bcfab5b9",
+		"origin":     "bosh-system-metrics-forwarder",
 		"deployment": "loggregator",
 	},
 	Message: &loggregator_v2.Envelope_Gauge{

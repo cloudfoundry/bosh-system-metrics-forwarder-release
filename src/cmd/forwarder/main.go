@@ -11,6 +11,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"time"
+
 	"github.com/cloudfoundry/bosh-system-metrics-forwarder/pkg/auth"
 	"github.com/cloudfoundry/bosh-system-metrics-forwarder/pkg/definitions"
 	"github.com/cloudfoundry/bosh-system-metrics-forwarder/pkg/egress"
@@ -21,7 +23,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
-	"time"
 )
 
 func main() {
@@ -63,8 +64,9 @@ func main() {
 	messages := make(chan *loggregator_v2.Envelope, 1024)
 
 	// server setup (ingress)
+	logger := log.New(os.Stderr, "", log.LstdFlags)
 	serverClient, serverConnClose := setupConnToMetricsServer(*metricsServerAddr, *metricsCN, *metricsCA)
-	i := ingress.New(serverClient, mapper.New(*envelopeIpTag), messages, authClient, *subscriptionID)
+	i := ingress.New(serverClient, mapper.New(*envelopeIpTag), messages, authClient, *subscriptionID, logger)
 
 	// metron setup (egress)
 	metronClient, metronConnClose := setupConnToMetron(*metronPort, *metronCA, *metronCert, *metronKey)
