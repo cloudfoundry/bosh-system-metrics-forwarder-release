@@ -3,6 +3,8 @@ This repo is being maintained but there is no active development.
 Please refer to the [system-metrics-release](https://github.com/cloudfoundry/system-metrics-release) 
 for the newer architecture for getting system metrics.
 
+If you have any questions, or want to get attention for a PR or issue please reach out on the [#logging-and-metrics channel in the cloudfoundry slack](https://cloudfoundry.slack.com/archives/CUW93AF3M)
+
 # Bosh System Metrics Forwarder Release
 
 This consumes bosh health events and forwards _heartbeat events only_ to Loggregator. For more info, see https://github.com/cloudfoundry/bosh-system-metrics-server-release/wiki
