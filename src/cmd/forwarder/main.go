@@ -108,7 +108,7 @@ func setupConnToMetron(metronPort int, metronCA, metronCert, metronKey string) (
 	if err != nil {
 		log.Fatalf("unable to read tls certs: %s", err)
 	}
-	metronConn, err := grpc.Dial(
+	metronConn, err := grpc.NewClient(
 		fmt.Sprintf("localhost:%d", metronPort),
 		grpc.WithTransportCredentials(credentials.NewTLS(c)),
 	)
@@ -126,7 +126,7 @@ func setupConnToMetricsServer(addr, cn, ca string) (definitions.EgressClient, fu
 	if err != nil {
 		log.Fatal(err)
 	}
-	serverConn, err := grpc.Dial(
+	serverConn, err := grpc.NewClient(
 		addr,
 		grpc.WithTransportCredentials(credentials.NewTLS(serverTLSConf)),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
