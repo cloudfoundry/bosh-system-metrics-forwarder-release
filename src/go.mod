@@ -9,7 +9,7 @@ require (
 	github.com/onsi/gomega v1.33.1
 	github.com/prometheus/client_golang v1.19.1
 	golang.org/x/net v0.25.0
-	google.golang.org/grpc v1.63.2
+	google.golang.org/grpc v1.64.0
 )
 
 require (
@@ -19,7 +19,7 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.53.0 // indirect
-	github.com/prometheus/procfs v0.14.0 // indirect
+	github.com/prometheus/procfs v0.15.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240513163218-0867130af1f8 // indirect
