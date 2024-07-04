@@ -2,14 +2,14 @@ module github.com/cloudfoundry/bosh-system-metrics-forwarder
 
 go 1.21.0
 
-toolchain go1.21.11
+toolchain go1.21.12
 
 require (
 	github.com/golang/protobuf v1.5.4
 	github.com/onsi/gomega v1.33.1
 	github.com/prometheus/client_golang v1.19.1
 	golang.org/x/net v0.26.0
-	google.golang.org/grpc v1.64.0
+	google.golang.org/grpc v1.65.0
 )
 
 require (
@@ -23,7 +23,7 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240624140628-dc46fd24d27d // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
