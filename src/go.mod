@@ -1,8 +1,6 @@
 module github.com/cloudfoundry/bosh-system-metrics-forwarder
 
-go 1.22.0
-
-toolchain go1.22.6
+go 1.26.0
 
 require (
 	github.com/golang/protobuf v1.5.4
